@@ -1,10 +1,10 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Monitor, FileText, Folder, AlertCircle, CheckCircle } from 'lucide-react';
+import { Users, Monitor, FileText, Folder, AlertCircle, CheckCircle, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardStats } from '../../types';
+import AdminStatsChart from './AdminStatsChart';
 
 // Mock data for demonstration
 const mockStats: DashboardStats = {
@@ -16,8 +16,23 @@ const mockStats: DashboardStats = {
   resolvedToday: 8
 };
 
+// Mock trend data (percentage change)
+const mockTrends = {
+  totalClients: 6,     // up 6%
+  activeDevices: -3,   // down 3%
+  openTickets: -8,     // down 8%
+  availableAssets: 5,  // up 5%
+  pendingRequests: 0,  // no change
+  resolvedToday: 15    // up 15%
+};
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  // Simple date filter (use real date pickers in production)
+  const [dateRange, setDateRange] = useState<{start: string, end: string}>({
+    start: "",
+    end: ""
+  });
 
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
@@ -25,20 +40,35 @@ const Dashboard: React.FC = () => {
     return `${greeting}, ${user?.name}!`;
   };
 
+  // StatCard with trend
   const StatCard: React.FC<{
     title: string;
     value: number;
     icon: React.ComponentType<{ className?: string }>;
     color: string;
+    percentageChange: number;
     description?: string;
-  }> = ({ title, value, icon: Icon, color, description }) => (
+  }> = ({ title, value, icon: Icon, color, percentageChange, description }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className={`h-4 w-4 ${color}`} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="flex items-end space-x-3">
+          <div className="text-2xl font-bold">{value}</div>
+          <div className="flex items-center text-xs">
+            {percentageChange > 0 && (
+              <span className="flex items-center text-green-600"><ArrowUpRight className="h-3 w-3 mr-1" />+{percentageChange}%</span>
+            )}
+            {percentageChange < 0 && (
+              <span className="flex items-center text-red-600"><ArrowDownRight className="h-3 w-3 mr-1" />{percentageChange}%</span>
+            )}
+            {percentageChange === 0 && (
+              <span className="text-gray-400">0%</span>
+            )}
+          </div>
+        </div>
         {description && (
           <p className="text-xs text-muted-foreground">{description}</p>
         )}
@@ -54,19 +84,43 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">{getWelcomeMessage()}</h1>
         <p className="text-gray-600">Here's what's happening with your IT management system today.</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Date Filter */}
+      <div className="flex flex-wrap items-center space-x-4 mb-2">
+        <label>
+          <span className="text-sm font-medium mr-1">Start:</span>
+          <input
+            type="date"
+            className="border rounded px-2 py-1"
+            value={dateRange.start}
+            onChange={e => setDateRange(d => ({ ...d, start: e.target.value }))}
+          />
+        </label>
+        <label>
+          <span className="text-sm font-medium mx-1">End:</span>
+          <input
+            type="date"
+            className="border rounded px-2 py-1"
+            value={dateRange.end}
+            onChange={e => setDateRange(d => ({ ...d, end: e.target.value }))}
+          />
+        </label>
+        <span className="ml-4 text-gray-400 text-xs">(Filtering not functional in demo)</span>
+      </div>
+
+      {/* Enhanced Stats + Trends Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard
           title="Total Clients"
           value={mockStats.totalClients}
           icon={Users}
           color="text-blue-600"
+          percentageChange={mockTrends.totalClients}
           description="Active client accounts"
         />
         <StatCard
@@ -74,6 +128,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.activeDevices}
           icon={Monitor}
           color="text-green-600"
+          percentageChange={mockTrends.activeDevices}
           description="Devices under management"
         />
         <StatCard
@@ -81,6 +136,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.openTickets}
           icon={FileText}
           color="text-orange-600"
+          percentageChange={mockTrends.openTickets}
           description="Requires attention"
         />
         <StatCard
@@ -88,6 +144,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.availableAssets}
           icon={Folder}
           color="text-purple-600"
+          percentageChange={mockTrends.availableAssets}
           description="Ready for assignment"
         />
         <StatCard
@@ -95,6 +152,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.pendingRequests}
           icon={AlertCircle}
           color="text-red-600"
+          percentageChange={mockTrends.pendingRequests}
           description="Awaiting approval"
         />
         <StatCard
@@ -102,11 +160,17 @@ const Dashboard: React.FC = () => {
           value={mockStats.resolvedToday}
           icon={CheckCircle}
           color="text-green-600"
+          percentageChange={mockTrends.resolvedToday}
           description="Tickets completed"
         />
       </div>
 
-      {/* Recent Activity */}
+      {/* Admin Trends & Stats Chart */}
+      <div className="bg-white rounded-lg shadow px-4 py-6 mt-2">
+        <AdminStatsChart />
+      </div>
+
+      {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
