@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -84,6 +83,38 @@ const TechnicianManagement: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Technician>>({});
+
+  // Utility to get badge color class for role
+  function getRoleBadgeColor(role: string) {
+    switch (role) {
+      case 'Senior Technician':
+        return 'bg-blue-100 text-blue-800';
+      case 'Junior Technician':
+        return 'bg-green-100 text-green-800';
+      case 'Specialist':
+        return 'bg-purple-100 text-purple-800';
+      case 'Team Lead':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  // Utility to get badge color class for status
+  function getStatusBadgeColor(status: string) {
+    switch (status) {
+      case 'Available':
+        return 'bg-green-100 text-green-800';
+      case 'Busy':
+        return 'bg-red-100 text-red-800';
+      case 'On Leave':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Off Duty':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
 
   // Open Edit, populate form
   const handleEdit = (technician: Technician) => {
@@ -438,7 +469,15 @@ const TechnicianManagement: React.FC = () => {
                     ? editForm.skills.join(', ')
                     : (editForm.skills as string) || ''
                 }
-                onChange={e => setEditForm(f => ({ ...f, skills: e.target.value }))}
+                onChange={e =>
+                  setEditForm(f => ({
+                    ...f,
+                    skills: e.target.value
+                      .split(',')
+                      .map(s => s.trim())
+                      .filter(Boolean),
+                  }))
+                }
               />
             </div>
             <div className="space-y-2">
@@ -485,4 +524,3 @@ const TechnicianManagement: React.FC = () => {
 };
 
 export default TechnicianManagement;
-
