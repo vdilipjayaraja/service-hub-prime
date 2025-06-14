@@ -5,6 +5,7 @@ import { Users, Monitor, FileText, Folder, AlertCircle, CheckCircle } from 'luci
 import { PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDashboardStats } from '../../hooks/useDashboardStats';
+import { DashboardStats } from '../../types';
 
 // Mock data for demonstration
 const mockStats: DashboardStats = {

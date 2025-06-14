@@ -206,7 +206,6 @@ const ServiceRequestList: React.FC = () => {
     return (
       <ServiceRequestDetail
         request={viewingRequest}
-        onUpdate={handleUpdateRequest}
         onBack={() => setViewingRequest(undefined)}
       />
     );
