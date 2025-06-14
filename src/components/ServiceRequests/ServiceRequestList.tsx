@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Filter, Eye, Edit, Clock, AlertCircle, CheckCircle, XCircle, FileText, UserCheck } from 'lucide-react';
+import { Plus, UserCheck } from 'lucide-react';
 import { ServiceRequest } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { useTechnicians } from '../../hooks/useTechnicians';
+import { useNotifications } from '../../hooks/useNotifications';
 import ServiceRequestForm from './ServiceRequestForm';
 import ServiceRequestDetail from './ServiceRequestDetail';
 import AssignmentDialog from './AssignmentDialog';
+import ServiceRequestFilters from './ServiceRequestFilters';
+import ServiceRequestCard from './ServiceRequestCard';
+import BulkSelectionBar from './BulkSelectionBar';
+import EmptyState from './EmptyState';
 
 // Mock data for demonstration
 const mockServiceRequests: ServiceRequest[] = [
@@ -68,6 +69,7 @@ const ServiceRequestList: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { getTechnicianById } = useTechnicians();
+  const { addAssignmentNotification } = useNotifications();
   const [requests, setRequests] = useState<ServiceRequest[]>(mockServiceRequests);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -79,6 +81,7 @@ const ServiceRequestList: React.FC = () => {
   const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
 
   const canAssign = user?.role === 'admin';
+  const canEdit = user?.role === 'admin' || user?.role === 'technician';
 
   const filteredRequests = requests.filter(request => {
     const matchesSearch = request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -132,7 +135,7 @@ const ServiceRequestList: React.FC = () => {
 
     setRequests(prev => prev.map(req => {
       if (requestIds.includes(req.id)) {
-        return {
+        const updatedRequest = {
           ...req,
           assignedTo: technicianId,
           technicianName: technician.name,
@@ -140,6 +143,11 @@ const ServiceRequestList: React.FC = () => {
           assignedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
+        
+        // Add notification for assignment
+        addAssignmentNotification(req.ticketId, technician.name);
+        
+        return updatedRequest;
       }
       return req;
     }));
@@ -177,38 +185,6 @@ const ServiceRequestList: React.FC = () => {
     ));
   };
 
-  const getStatusIcon = (status: ServiceRequest['status']) => {
-    switch (status) {
-      case 'open': return <AlertCircle className="h-4 w-4" />;
-      case 'assigned': return <Clock className="h-4 w-4" />;
-      case 'in_progress': return <Clock className="h-4 w-4" />;
-      case 'resolved': return <CheckCircle className="h-4 w-4" />;
-      case 'closed': return <XCircle className="h-4 w-4" />;
-      default: return <AlertCircle className="h-4 w-4" />;
-    }
-  };
-
-  const getStatusColor = (status: ServiceRequest['status']) => {
-    switch (status) {
-      case 'open': return 'bg-red-100 text-red-800';
-      case 'assigned': return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityColor = (priority: ServiceRequest['priority']) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   const getPageTitle = () => {
     switch (user?.role) {
       case 'client': return 'My Service Requests';
@@ -244,12 +220,6 @@ const ServiceRequestList: React.FC = () => {
           <p className="text-gray-600">Track and manage service requests</p>
         </div>
         <div className="flex space-x-2">
-          {canAssign && selectedRequests.length > 0 && (
-            <Button onClick={() => setShowAssignmentDialog(true)}>
-              <UserCheck className="mr-2 h-4 w-4" />
-              Assign Selected ({selectedRequests.length})
-            </Button>
-          )}
           {(user?.role === 'client' || user?.role === 'admin') && (
             <Button onClick={handleNewRequest}>
               <Plus className="mr-2 h-4 w-4" />
@@ -259,182 +229,49 @@ const ServiceRequestList: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search requests..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={statusFilter === 'all' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('all')}
-                size="sm"
-              >
-                All Status
-              </Button>
-              <Button
-                variant={statusFilter === 'open' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('open')}
-                size="sm"
-              >
-                Open
-              </Button>
-              <Button
-                variant={statusFilter === 'assigned' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('assigned')}
-                size="sm"
-              >
-                Assigned
-              </Button>
-              <Button
-                variant={statusFilter === 'in_progress' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('in_progress')}
-                size="sm"
-              >
-                In Progress
-              </Button>
-              <Button
-                variant={statusFilter === 'resolved' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('resolved')}
-                size="sm"
-              >
-                Resolved
-              </Button>
-              
-              {/* Assignment Filters */}
-              <Button
-                variant={assignmentFilter === 'unassigned' ? 'default' : 'outline'}
-                onClick={() => setAssignmentFilter('unassigned')}
-                size="sm"
-              >
-                Unassigned
-              </Button>
-              <Button
-                variant={assignmentFilter === 'assigned' ? 'default' : 'outline'}
-                onClick={() => setAssignmentFilter('assigned')}
-                size="sm"
-              >
-                Assigned
-              </Button>
-              {user?.role === 'technician' && (
-                <Button
-                  variant={assignmentFilter === 'my_assignments' ? 'default' : 'outline'}
-                  onClick={() => setAssignmentFilter('my_assignments')}
-                  size="sm"
-                >
-                  My Assignments
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ServiceRequestFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        assignmentFilter={assignmentFilter}
+        onAssignmentFilterChange={setAssignmentFilter}
+        user={user}
+      />
 
-      {/* Request List with Selection */}
       <div className="space-y-4">
         {canAssign && filteredRequests.length > 0 && (
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={selectedRequests.length === filteredRequests.length && filteredRequests.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-                <span className="text-sm text-gray-600">
-                  Select all ({filteredRequests.length} requests)
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          <BulkSelectionBar
+            selectedCount={selectedRequests.length}
+            totalCount={filteredRequests.length}
+            allSelected={selectedRequests.length === filteredRequests.length}
+            onSelectAll={handleSelectAll}
+            onBulkAssign={() => setShowAssignmentDialog(true)}
+          />
         )}
 
         {filteredRequests.map((request) => (
-          <Card key={request.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
-                  {canAssign && (
-                    <Checkbox
-                      checked={selectedRequests.includes(request.id)}
-                      onCheckedChange={(checked) => handleSelectRequest(request.id, !!checked)}
-                      className="mt-1"
-                    />
-                  )}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center space-x-3">
-                      <h3 className="text-lg font-semibold">{request.title}</h3>
-                      <Badge className={getStatusColor(request.status)}>
-                        {getStatusIcon(request.status)}
-                        <span className="ml-1 capitalize">{request.status.replace('_', ' ')}</span>
-                      </Badge>
-                      <Badge variant="outline" className={getPriorityColor(request.priority)}>
-                        {request.priority.toUpperCase()}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span><strong>Ticket:</strong> {request.ticketId}</span>
-                      <span><strong>Client:</strong> {request.clientName}</span>
-                      {request.technicianName && (
-                        <span><strong>Technician:</strong> {request.technicianName}</span>
-                      )}
-                      <span><strong>Created:</strong> {new Date(request.createdAt).toLocaleDateString()}</span>
-                      {request.assignedAt && (
-                        <span><strong>Assigned:</strong> {new Date(request.assignedAt).toLocaleDateString()}</span>
-                      )}
-                    </div>
-                    
-                    <p className="text-gray-700 mt-2">{request.description}</p>
-                    
-                    {request.resolutionNotes && (
-                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-800">
-                          <strong>Resolution:</strong> {request.resolutionNotes}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex space-x-2 ml-4">
-                  <Button variant="ghost" size="sm" onClick={() => handleViewRequest(request)} title="View Details">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  {(user?.role === 'admin' || user?.role === 'technician') && (
-                    <Button variant="ghost" size="sm" onClick={() => handleViewRequest(request)} title="Edit Request">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ServiceRequestCard
+            key={request.id}
+            request={request}
+            onView={handleViewRequest}
+            canEdit={canEdit}
+            canSelect={canAssign}
+            isSelected={selectedRequests.includes(request.id)}
+            onSelect={handleSelectRequest}
+          />
         ))}
+
+        {filteredRequests.length === 0 && <EmptyState user={user} />}
       </div>
 
-      {filteredRequests.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No service requests found</h3>
-            <p className="text-gray-600">
-              {user?.role === 'client' 
-                ? "You haven't submitted any service requests yet."
-                : "No requests match your current filters."
-              }
-            </p>
-          </CardContent>
-        </Card>
+      {showAssignmentDialog && (
+        <AssignmentDialog
+          isOpen={showAssignmentDialog}
+          onClose={() => setShowAssignmentDialog(false)}
+          selectedRequests={selectedRequestObjects}
+          onAssign={handleBulkAssign}
+        />
       )}
     </div>
   );
