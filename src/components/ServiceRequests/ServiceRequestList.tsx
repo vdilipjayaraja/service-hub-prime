@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, Eye, Edit, Clock, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Clock, AlertCircle, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { ServiceRequest } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 

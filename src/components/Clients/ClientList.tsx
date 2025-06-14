@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash, Eye, Monitor, FileText } from 'lucide-react';
+import { Plus, Search, Edit, Trash, Eye, Monitor, FileText, Users } from 'lucide-react';
 import { Client } from '../../types';
 
 // Mock data for demonstration
