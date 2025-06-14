@@ -1,10 +1,11 @@
-
 export interface User {
   id: string;
   name: string;
   email: string;
   role: 'admin' | 'technician' | 'client';
   avatar?: string;
+  // This field is NOT used for login. Authentication is done via Supabase Auth.
+  password?: string;
 }
 
 export interface Client {
