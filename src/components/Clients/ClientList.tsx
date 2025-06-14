@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit, Trash, Eye, Monitor, FileText, Users } from 'lucide-react';
 import { Client } from '../../types';
+import { useToast } from '@/components/ui/use-toast';
+import ClientForm from './ClientForm';
 
 // Mock data for demonstration
 const mockClients: Client[] = [
@@ -48,9 +50,12 @@ const mockClients: Client[] = [
 ];
 
 const ClientList: React.FC = () => {
+  const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>(mockClients);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | undefined>();
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,6 +64,44 @@ const ClientList: React.FC = () => {
     const matchesFilter = filterType === 'all' || client.type === filterType;
     return matchesSearch && matchesFilter;
   });
+
+  const handleAddClient = () => {
+    setEditingClient(undefined);
+    setShowForm(true);
+  };
+
+  const handleEditClient = (client: Client) => {
+    setEditingClient(client);
+    setShowForm(true);
+  };
+
+  const handleDeleteClient = (clientId: string) => {
+    setClients(prev => prev.filter(c => c.id !== clientId));
+    toast({
+      title: "Success",
+      description: "Client deleted successfully"
+    });
+  };
+
+  const handleSaveClient = (clientData: Omit<Client, 'id'>) => {
+    if (editingClient) {
+      // Update existing client
+      setClients(prev => prev.map(c => 
+        c.id === editingClient.id 
+          ? { ...clientData, id: editingClient.id }
+          : c
+      ));
+    } else {
+      // Add new client
+      const newClient: Client = {
+        ...clientData,
+        id: Date.now().toString()
+      };
+      setClients(prev => [...prev, newClient]);
+    }
+    setShowForm(false);
+    setEditingClient(undefined);
+  };
 
   const getTypeColor = (type: Client['type']) => {
     switch (type) {
@@ -78,6 +121,19 @@ const ClientList: React.FC = () => {
     }
   };
 
+  if (showForm) {
+    return (
+      <ClientForm
+        client={editingClient}
+        onSave={handleSaveClient}
+        onCancel={() => {
+          setShowForm(false);
+          setEditingClient(undefined);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -85,7 +141,7 @@ const ClientList: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Client Management</h1>
           <p className="text-gray-600">Manage your clients and customer relationships</p>
         </div>
-        <Button>
+        <Button onClick={handleAddClient}>
           <Plus className="mr-2 h-4 w-4" />
           Add Client
         </Button>
@@ -177,13 +233,13 @@ const ClientList: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex space-x-1">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" title="View Details">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditClient(client)} title="Edit Client">
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClient(client.id)} title="Delete Client">
                     <Trash className="h-4 w-4" />
                   </Button>
                 </div>

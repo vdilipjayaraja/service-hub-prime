@@ -7,6 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Filter, Eye, Edit, Clock, AlertCircle, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { ServiceRequest } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import ServiceRequestForm from './ServiceRequestForm';
+import ServiceRequestDetail from './ServiceRequestDetail';
 
 // Mock data for demonstration
 const mockServiceRequests: ServiceRequest[] = [
@@ -61,10 +64,13 @@ const mockServiceRequests: ServiceRequest[] = [
 
 const ServiceRequestList: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [requests, setRequests] = useState<ServiceRequest[]>(mockServiceRequests);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [showForm, setShowForm] = useState(false);
+  const [viewingRequest, setViewingRequest] = useState<ServiceRequest | undefined>();
 
   const filteredRequests = requests.filter(request => {
     const matchesSearch = request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -83,6 +89,32 @@ const ServiceRequestList: React.FC = () => {
     
     return matchesSearch && matchesStatus && matchesPriority;
   });
+
+  const handleNewRequest = () => {
+    setShowForm(true);
+  };
+
+  const handleSubmitRequest = (requestData: Omit<ServiceRequest, 'id' | 'ticketId' | 'createdAt' | 'updatedAt'>) => {
+    const newRequest: ServiceRequest = {
+      ...requestData,
+      id: Date.now().toString(),
+      ticketId: `TKT-2024-${String(requests.length + 1).padStart(3, '0')}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setRequests(prev => [...prev, newRequest]);
+    setShowForm(false);
+  };
+
+  const handleViewRequest = (request: ServiceRequest) => {
+    setViewingRequest(request);
+  };
+
+  const handleUpdateRequest = (id: string, updates: Partial<ServiceRequest>) => {
+    setRequests(prev => prev.map(r => 
+      r.id === id ? { ...r, ...updates } : r
+    ));
+  };
 
   const getStatusIcon = (status: ServiceRequest['status']) => {
     switch (status) {
@@ -124,6 +156,25 @@ const ServiceRequestList: React.FC = () => {
     }
   };
 
+  if (showForm) {
+    return (
+      <ServiceRequestForm
+        onSubmit={handleSubmitRequest}
+        onCancel={() => setShowForm(false)}
+      />
+    );
+  }
+
+  if (viewingRequest) {
+    return (
+      <ServiceRequestDetail
+        request={viewingRequest}
+        onUpdate={handleUpdateRequest}
+        onBack={() => setViewingRequest(undefined)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -132,7 +183,7 @@ const ServiceRequestList: React.FC = () => {
           <p className="text-gray-600">Track and manage service requests</p>
         </div>
         {(user?.role === 'client' || user?.role === 'admin') && (
-          <Button>
+          <Button onClick={handleNewRequest}>
             <Plus className="mr-2 h-4 w-4" />
             New Request
           </Button>
@@ -227,11 +278,11 @@ const ServiceRequestList: React.FC = () => {
                 </div>
                 
                 <div className="flex space-x-2 ml-4">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => handleViewRequest(request)} title="View Details">
                     <Eye className="h-4 w-4" />
                   </Button>
                   {(user?.role === 'admin' || user?.role === 'technician') && (
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => handleViewRequest(request)} title="Edit Request">
                       <Edit className="h-4 w-4" />
                     </Button>
                   )}
