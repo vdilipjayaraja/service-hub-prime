@@ -81,25 +81,56 @@ const TechnicianManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<Technician>>({});
 
-  const getStatusBadgeColor = (status: Technician['status']) => {
-    switch (status) {
-      case 'Available': return 'bg-green-100 text-green-800';
-      case 'Busy': return 'bg-red-100 text-red-800';
-      case 'On Leave': return 'bg-yellow-100 text-yellow-800';
-      case 'Off Duty': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  // Open Edit, populate form
+  const handleEdit = (technician: Technician) => {
+    setSelectedTechnician(technician);
+    setEditForm({ ...technician });
+    setEditDialogOpen(true);
   };
 
-  const getRoleBadgeColor = (role: Technician['role']) => {
-    switch (role) {
-      case 'Team Lead': return 'bg-purple-100 text-purple-800';
-      case 'Senior Technician': return 'bg-blue-100 text-blue-800';
-      case 'Specialist': return 'bg-indigo-100 text-indigo-800';
-      case 'Junior Technician': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  // Save edits to technician
+  const handleEditSave = () => {
+    setTechnicians(prev =>
+      prev.map(t =>
+        t.id === editForm.id
+          ? {
+              ...t,
+              name: editForm.name || '',
+              email: editForm.email || '',
+              phone: editForm.phone || '',
+              role: editForm.role as Technician['role'] || 'Junior Technician',
+              status: editForm.status as Technician['status'] || 'Available',
+              skills: typeof editForm.skills === 'string'
+                ? (editForm.skills as string).split(',').map(s => s.trim())
+                : Array.isArray(editForm.skills)
+                ? editForm.skills
+                : [],
+              location: editForm.location || '',
+              notes: editForm.notes || '',
+            }
+          : t
+      )
+    );
+    setEditDialogOpen(false);
+    setSelectedTechnician(null);
+    setEditForm({});
+  };
+
+  // Handle Delete
+  const handleDelete = (technician: Technician) => {
+    setSelectedTechnician(technician);
+    setDeleteDialogOpen(true);
+  };
+  const confirmDelete = () => {
+    setTechnicians(prev =>
+      prev.filter(t => t.id !== selectedTechnician?.id)
+    );
+    setDeleteDialogOpen(false);
+    setSelectedTechnician(null);
   };
 
   const filteredTechnicians = technicians.filter(tech =>
@@ -309,10 +340,10 @@ const TechnicianManagement: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedTechnician(technician)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(technician)}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(technician)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -323,8 +354,135 @@ const TechnicianManagement: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* EDIT Technician Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Technician</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-tech-name">Full Name</Label>
+              <Input
+                id="edit-tech-name"
+                value={editForm.name || ''}
+                onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tech-email">Email</Label>
+              <Input
+                id="edit-tech-email"
+                type="email"
+                value={editForm.email || ''}
+                onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tech-phone">Phone</Label>
+              <Input
+                id="edit-tech-phone"
+                value={editForm.phone || ''}
+                onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tech-role">Role</Label>
+              <Select
+                value={editForm.role || ''}
+                onValueChange={val => setEditForm(f => ({ ...f, role: val as Technician['role'] }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Junior Technician">Junior Technician</SelectItem>
+                  <SelectItem value="Senior Technician">Senior Technician</SelectItem>
+                  <SelectItem value="Specialist">Specialist</SelectItem>
+                  <SelectItem value="Team Lead">Team Lead</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tech-status">Status</Label>
+              <Select
+                value={editForm.status || ''}
+                onValueChange={val => setEditForm(f => ({ ...f, status: val as Technician['status'] }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Available">Available</SelectItem>
+                  <SelectItem value="Busy">Busy</SelectItem>
+                  <SelectItem value="On Leave">On Leave</SelectItem>
+                  <SelectItem value="Off Duty">Off Duty</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tech-location">Location</Label>
+              <Input
+                id="edit-tech-location"
+                value={editForm.location || ''}
+                onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tech-skills">Skills (comma separated)</Label>
+              <Textarea
+                id="edit-tech-skills"
+                value={
+                  Array.isArray(editForm.skills)
+                    ? editForm.skills.join(', ')
+                    : (editForm.skills as string) || ''
+                }
+                onChange={e => setEditForm(f => ({ ...f, skills: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tech-notes">Notes</Label>
+              <Textarea
+                id="edit-tech-notes"
+                value={editForm.notes || ''}
+                onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditSave}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE Technician Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Technician</DialogTitle>
+          </DialogHeader>
+          <div className="my-4">
+            <p>Are you sure you want to delete "<b>{selectedTechnician?.name}</b>"?</p>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default TechnicianManagement;
+
