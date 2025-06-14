@@ -1,10 +1,15 @@
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: 'admin' | 'technician' | 'client';
   avatar?: string;
-  // This field is NOT used for login. Authentication is done via Supabase Auth.
+  /**
+   * This field is NOT used for authentication.
+   * Authentication is handled by Supabase Auth.
+   * This field may only be used for demo or legacy purposes!
+   */
   password?: string;
 }
 
