@@ -48,6 +48,7 @@ export interface ServiceRequest {
   submittedBy: string;
   createdAt: string;
   updatedAt: string;
+  assignedAt?: string;
   resolutionNotes?: string;
   clientName?: string;
   technicianName?: string;

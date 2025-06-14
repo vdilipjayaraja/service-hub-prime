@@ -1,14 +1,14 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, Clock, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Save, Clock, AlertCircle, CheckCircle, XCircle, UserCheck } from 'lucide-react';
 import { ServiceRequest } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { useTechnicians } from '../../hooks/useTechnicians';
 
 interface ServiceRequestDetailProps {
   request: ServiceRequest;
@@ -19,10 +19,15 @@ interface ServiceRequestDetailProps {
 const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, onUpdate, onBack }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { getAvailableTechnicians, getTechnicianById } = useTechnicians();
   const [status, setStatus] = useState(request.status);
   const [resolutionNotes, setResolutionNotes] = useState(request.resolutionNotes || '');
+  const [assignedTo, setAssignedTo] = useState(request.assignedTo || '');
 
   const canEdit = user?.role === 'admin' || user?.role === 'technician';
+  const canAssign = user?.role === 'admin';
+  const availableTechnicians = getAvailableTechnicians();
+  const assignedTechnician = request.assignedTo ? getTechnicianById(request.assignedTo) : null;
 
   const getStatusIcon = (status: ServiceRequest['status']) => {
     switch (status) {
@@ -47,14 +52,44 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
   };
 
   const handleUpdate = () => {
-    onUpdate(request.id, {
+    const updates: Partial<ServiceRequest> = {
       status,
       resolutionNotes,
       updatedAt: new Date().toISOString()
-    });
+    };
+
+    // If assignment changed, add assignment timestamp
+    if (assignedTo !== request.assignedTo) {
+      updates.assignedTo = assignedTo;
+      updates.assignedAt = new Date().toISOString();
+      if (assignedTo && status === 'open') {
+        updates.status = 'assigned';
+        setStatus('assigned');
+      }
+    }
+
+    onUpdate(request.id, updates);
     toast({
       title: "Success",
       description: "Service request updated successfully"
+    });
+  };
+
+  const handleAssign = () => {
+    if (!assignedTo) return;
+
+    const updates: Partial<ServiceRequest> = {
+      assignedTo,
+      status: 'assigned',
+      assignedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    onUpdate(request.id, updates);
+    setStatus('assigned');
+    toast({
+      title: "Success",
+      description: "Request assigned successfully"
     });
   };
 
@@ -71,12 +106,20 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
             <p className="text-gray-600">Ticket: {request.ticketId}</p>
           </div>
         </div>
-        {canEdit && (
-          <Button onClick={handleUpdate}>
-            <Save className="mr-2 h-4 w-4" />
-            Save Changes
-          </Button>
-        )}
+        <div className="flex space-x-2">
+          {canAssign && !request.assignedTo && (
+            <Button onClick={handleAssign} disabled={!assignedTo}>
+              <UserCheck className="mr-2 h-4 w-4" />
+              Assign
+            </Button>
+          )}
+          {canEdit && (
+            <Button onClick={handleUpdate}>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -118,7 +161,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Status & Info</CardTitle>
+              <CardTitle>Status & Assignment</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -144,6 +187,43 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
                 )}
               </div>
 
+              {canAssign && (
+                <div>
+                  <h4 className="font-semibold mb-2">Assign Technician</h4>
+                  <Select value={assignedTo} onValueChange={setAssignedTo}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select technician" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {availableTechnicians.map(tech => (
+                        <SelectItem key={tech.id} value={tech.id}>
+                          {tech.name} ({tech.activeRequests} active)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {assignedTechnician && (
+                <div>
+                  <h4 className="font-semibold">Assigned Technician</h4>
+                  <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="font-medium text-blue-900">{assignedTechnician.name}</p>
+                    <p className="text-sm text-blue-700">{assignedTechnician.email}</p>
+                    <Badge variant="outline" className="mt-1">
+                      {assignedTechnician.activeRequests} active requests
+                    </Badge>
+                  </div>
+                  {request.assignedAt && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Assigned: {new Date(request.assignedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <h4 className="font-semibold">Priority</h4>
                 <Badge variant="outline" className="mt-1">
@@ -155,13 +235,6 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
                 <h4 className="font-semibold">Client</h4>
                 <p className="text-gray-700">{request.clientName}</p>
               </div>
-
-              {request.technicianName && (
-                <div>
-                  <h4 className="font-semibold">Assigned Technician</h4>
-                  <p className="text-gray-700">{request.technicianName}</p>
-                </div>
-              )}
 
               <div>
                 <h4 className="font-semibold">Created</h4>
