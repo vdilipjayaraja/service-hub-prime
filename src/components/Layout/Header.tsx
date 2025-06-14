@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Settings, LogOut, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +17,15 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -55,11 +65,11 @@ const Header: React.FC = () => {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleProfileClick}>
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSettingsClick}>
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>

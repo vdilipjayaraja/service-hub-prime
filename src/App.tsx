@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +9,8 @@ import Layout from "./components/Layout/Layout";
 import Dashboard from "./components/Dashboard/Dashboard";
 import ClientList from "./components/Clients/ClientList";
 import ServiceRequestList from "./components/ServiceRequests/ServiceRequestList";
+import ProfilePage from "./components/Profile/ProfilePage";
+import SettingsPage from "./components/Settings/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,8 @@ const AppRoutes = () => {
         <Route path="my-requests" element={<ServiceRequestList />} />
         <Route path="assets" element={<div className="p-6">Company Assets - Coming Soon</div>} />
         <Route path="technicians" element={<div className="p-6">Technician Management - Coming Soon</div>} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );
