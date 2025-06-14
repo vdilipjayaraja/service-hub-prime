@@ -10,19 +10,20 @@ import { ServiceRequest } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { useTechnicians } from '../../hooks/useTechnicians';
+import { useServiceRequests } from '../../hooks/useServiceRequests';
 
 interface ServiceRequestDetailProps {
   request: ServiceRequest;
-  onUpdate: (id: string, updates: Partial<ServiceRequest>) => void;
   onBack: () => void;
 }
 
 const UNASSIGNED = "unassigned";
 
-const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, onUpdate, onBack }) => {
+const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, onBack }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { getAvailableTechnicians, getTechnicianById } = useTechnicians();
+  const { updateServiceRequest } = useServiceRequests();
 
   // Use UNASSIGNED constant if assignedTo is not present
   const [assignedTo, setAssignedTo] = useState(
@@ -83,7 +84,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
       }
     }
 
-    onUpdate(request.id, updates);
+    updateServiceRequest({ id: request.id, updates });
     toast({
       title: "Success",
       description: "Service request updated successfully"
@@ -100,7 +101,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
       updatedAt: new Date().toISOString()
     };
 
-    onUpdate(request.id, updates);
+    updateServiceRequest({ id: request.id, updates });
     setStatus('assigned');
     toast({
       title: "Success",
@@ -284,4 +285,3 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
 };
 
 export default ServiceRequestDetail;
-

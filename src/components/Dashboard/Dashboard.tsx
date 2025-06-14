@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Monitor, FileText, Folder, AlertCircle, CheckCircle } from 'lucide-react';
 import { PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
-import { DashboardStats } from '../../types';
+import { useDashboardStats } from '../../hooks/useDashboardStats';
 
 // Mock data for demonstration
 const mockStats: DashboardStats = {
@@ -38,6 +37,7 @@ const getPieData = (title: string, value: number) => {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { stats, isLoading } = useDashboardStats();
 
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
@@ -81,7 +81,7 @@ const Dashboard: React.FC = () => {
             </PieChart>
           </div>
           <div>
-            <div className="text-2xl font-bold">{value}</div>
+            <div className="text-2xl font-bold">{isLoading ? '...' : value}</div>
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard
           title="Total Clients"
-          value={mockStats.totalClients}
+          value={stats.totalClients}
           icon={Users}
           color="text-blue-600"
           pieColor={PIE_COLORS[0]}
@@ -117,7 +117,7 @@ const Dashboard: React.FC = () => {
         />
         <StatCard
           title="Active Devices"
-          value={mockStats.activeDevices}
+          value={stats.activeDevices}
           icon={Monitor}
           color="text-green-600"
           pieColor={PIE_COLORS[1]}
@@ -125,7 +125,7 @@ const Dashboard: React.FC = () => {
         />
         <StatCard
           title="Open Tickets"
-          value={mockStats.openTickets}
+          value={stats.openTickets}
           icon={FileText}
           color="text-orange-600"
           pieColor={PIE_COLORS[2]}
@@ -133,7 +133,7 @@ const Dashboard: React.FC = () => {
         />
         <StatCard
           title="Available Assets"
-          value={mockStats.availableAssets}
+          value={stats.availableAssets}
           icon={Folder}
           color="text-purple-600"
           pieColor={PIE_COLORS[3]}
@@ -141,7 +141,7 @@ const Dashboard: React.FC = () => {
         />
         <StatCard
           title="Pending Requests"
-          value={mockStats.pendingRequests}
+          value={stats.pendingRequests}
           icon={AlertCircle}
           color="text-red-600"
           pieColor={PIE_COLORS[4]}
@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
         />
         <StatCard
           title="Resolved Today"
-          value={mockStats.resolvedToday}
+          value={stats.resolvedToday}
           icon={CheckCircle}
           color="text-green-600"
           pieColor={PIE_COLORS[5]}

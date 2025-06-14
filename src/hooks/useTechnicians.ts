@@ -1,5 +1,6 @@
 
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 
 export interface Technician {
   id: string;
@@ -11,39 +12,31 @@ export interface Technician {
   avatar?: string;
 }
 
-// Mock technician data
-const mockTechnicians: Technician[] = [
-  {
-    id: '1',
-    name: 'John Technician',
-    email: 'john@company.com',
-    status: 'available',
-    specialization: ['Hardware', 'Network'],
-    activeRequests: 2,
-    avatar: undefined
-  },
-  {
-    id: '2',
-    name: 'Sarah Tech',
-    email: 'sarah@company.com',
-    status: 'busy',
-    specialization: ['Software', 'Security'],
-    activeRequests: 5,
-    avatar: undefined
-  },
-  {
-    id: '3',
-    name: 'Mike Support',
-    email: 'mike@company.com',
-    status: 'available',
-    specialization: ['Hardware', 'CCTV'],
-    activeRequests: 1,
-    avatar: undefined
-  }
-];
-
 export const useTechnicians = () => {
-  const [technicians] = useState<Technician[]>(mockTechnicians);
+  const { data: technicians = [], isLoading, error } = useQuery({
+    queryKey: ['technicians'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('technicians')
+        .select('*')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching technicians:', error);
+        throw error;
+      }
+
+      return data?.map(tech => ({
+        id: tech.id,
+        name: tech.name,
+        email: tech.email,
+        status: tech.status,
+        specialization: tech.specialization || [],
+        activeRequests: tech.active_requests || 0,
+        avatar: tech.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${tech.name}`
+      })) as Technician[] || [];
+    }
+  });
 
   const getAvailableTechnicians = () => {
     return technicians.filter(tech => tech.status === 'available');
@@ -55,6 +48,8 @@ export const useTechnicians = () => {
 
   return {
     technicians,
+    isLoading,
+    error,
     getAvailableTechnicians,
     getTechnicianById
   };
