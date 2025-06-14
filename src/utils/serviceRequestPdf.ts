@@ -5,101 +5,153 @@ import jsPDF from "jspdf";
 /**
  * Helper to add a line with label and value, with nice spacing.
  */
-function addLabelValue(doc: jsPDF, label: string, value: string, y: number, options?: { bold?: boolean }) {
+function addLabelValue(
+  doc: jsPDF,
+  label: string,
+  value: string,
+  y: number,
+  col: number = 1,
+  options?: { bold?: boolean; icon?: string }
+) {
+  const leftX = col === 1 ? 22 : 115;
+  const labelColor = options?.bold ? [38, 110, 232] : [60, 60, 60];
   doc.setFont('helvetica', options?.bold ? 'bold' : 'normal');
-  doc.text(`${label}:`, 16, y);
+  doc.setTextColor(...labelColor);
+  let labelTxt = options?.icon ? `${options.icon} ${label}:` : `${label}:`;
+  doc.text(labelTxt, leftX, y);
   doc.setFont('helvetica', 'normal');
-  doc.text(value, 60, y);
+  doc.setTextColor(36, 36, 36);
+  doc.text(value, leftX + 50, y);
 }
 
 export function generateServiceRequestPdf(request: ServiceRequest) {
   const doc = new jsPDF();
 
-  // Header Banner
-  doc.setFillColor(38, 110, 232); // blue header
-  doc.rect(0, 0, 210, 24, 'F');
-  doc.setFont('helvetica', 'bold');
+  // Logo Placeholder (Top Left)
+  doc.setFillColor(38, 110, 232);
+  doc.roundedRect(10, 9, 12, 12, 3, 3, 'F');
+  doc.setFontSize(11);
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(18);
-  doc.text('ACME Services', 16, 16); // Company branding/title (edit as needed)
+  doc.text("A", 15, 17, { align: "center", baseline: "middle" });
 
-  // Page Title
-  doc.setFontSize(20);
-  doc.setTextColor(48, 48, 48);
+  // Header
   doc.setFont('helvetica', 'bold');
-  doc.text('Service Request Report', 16, 36);
+  doc.setFontSize(22);
+  doc.setTextColor(38, 110, 232);
+  doc.text('ACME Services', 27, 17);
 
-  // Draw a box around the ticket details
-  doc.setDrawColor(180);
-  doc.rect(14, 43, 182, 52, ''); // x, y, w, h
+  // Sub-header gradient line
+  for (let i = 0; i < 50; i++) {
+    doc.setDrawColor(38 + i*3, 110, 232 - i*2);
+    doc.line(10 + i*4, 24, 14 + i*4, 24);
+  }
 
-  // Ticket details
-  doc.setFontSize(12);
-  let y = 51;
-  addLabelValue(doc, "Ticket ID", request.ticketId, y, { bold: true });
-  addLabelValue(doc, "Title", request.title, y + 7);
-  addLabelValue(doc, "Priority", request.priority.toUpperCase(), y + 14);
-  addLabelValue(doc, "Status", request.status.replace('_', ' ').toUpperCase(), y + 21);
-  addLabelValue(doc, "Client", request.clientName || "—", y + 28);
+  // Page Title Box
+  doc.setFillColor(238, 246, 255);
+  doc.setDrawColor(38, 110, 232);
+  doc.roundedRect(15, 28, 180, 16, 4, 4, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(17);
+  doc.setTextColor(38, 110, 232);
+  doc.text('Service Request Report', 25, 39);
 
-  // Show assigned tech if present
+  // Details Card BG
+  doc.setDrawColor(210, 219, 239);
+  doc.setFillColor(246, 250, 255);
+  doc.roundedRect(15, 48, 180, 45, 6, 6, 'FD');
+
+  // Two-column layout for details
+  doc.setFontSize(11);
+  let y = 59;
+  addLabelValue(doc, "Ticket ID", request.ticketId, y, 1, { bold: true, icon: "🎟️" });
+  addLabelValue(doc, "Title", request.title, y + 8, 1, { icon: "📝" });
+  addLabelValue(doc, "Priority", request.priority.toUpperCase(), y + 16, 1, { icon: "⚡" });
+  addLabelValue(doc, "Status", request.status.replace('_', ' ').toUpperCase(), y + 24, 1, { icon: "📋" });
+  addLabelValue(doc, "Client", request.clientName || "—", y + 32, 1, { icon: "👤" });
+
   let techName = request.technicianName || "Unassigned";
-  addLabelValue(doc, "Technician", techName, y + 35);
-  addLabelValue(doc, "Created At", new Date(request.createdAt).toLocaleString(), y + 42);
+  addLabelValue(doc, "Technician", techName, y, 2, { icon: "🛠️" });
+  addLabelValue(
+    doc,
+    "Created At",
+    new Date(request.createdAt).toLocaleString(),
+    y + 8,
+    2,
+    { icon: "🕑" }
+  );
   addLabelValue(
     doc,
     "Assigned At",
     request.assignedAt ? new Date(request.assignedAt).toLocaleString() : "Not Assigned",
-    y + 49
+    y + 16,
+    2,
+    { icon: "➡️" }
   );
   addLabelValue(
     doc,
     "Resolved At",
     request.updatedAt ? new Date(request.updatedAt).toLocaleString() : "N/A",
-    y + 56
+    y + 24,
+    2,
+    { icon: "✅" }
   );
 
-  // Description Section
-  let descY = 102;
+  // Description - Section Header
+  let descY = 104;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(38, 110, 232);
-  doc.text("Issue Description", 16, descY);
+  doc.text("Issue Description", 18, descY);
 
-  doc.setDrawColor(220, 220, 220);
-  doc.setFillColor(245, 247, 255);
-  doc.roundedRect(14, descY + 4, 182, 18, 2, 2, 'F');
+  // Description Box
+  doc.setDrawColor(220, 232, 246);
+  doc.setFillColor(247, 249, 254);
+  doc.roundedRect(15, descY + 5, 180, 18, 3, 3, 'FD');
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(50, 50, 50);
-  doc.setFontSize(12);
-  doc.text(doc.splitTextToSize(request.description, 178), 18, descY + 14);
+  doc.setFontSize(11.5);
+  doc.setTextColor(36, 36, 36);
+  doc.text(doc.splitTextToSize(request.description, 172), 20, descY + 14);
 
-  // Resolution Notes Section
-  let notesStartY = descY + 28;
+  // Resolution Notes - Section Header
+  let notesStartY = descY + 30;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(76, 175, 80);
-  doc.text("Resolution Notes", 16, notesStartY);
+  doc.text("Resolution Notes", 18, notesStartY);
 
-  doc.setDrawColor(205, 233, 208);
-  doc.setFillColor(239, 250, 243);
-  doc.roundedRect(14, notesStartY + 4, 182, 30, 2, 2, 'F');
+  // Resolution Notes Box
+  doc.setDrawColor(187, 236, 200);
+  doc.setFillColor(232, 248, 239);
+  doc.roundedRect(15, notesStartY + 5, 180, 26, 3, 3, 'FD');
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11.5);
   doc.setTextColor(33, 86, 50);
-  doc.setFontSize(12);
+
   if (request.resolutionNotes) {
-    doc.text(doc.splitTextToSize(request.resolutionNotes, 178), 18, notesStartY + 12);
+    doc.text(doc.splitTextToSize(request.resolutionNotes, 172), 20, notesStartY + 13);
   } else {
-    doc.text("No resolution notes provided.", 18, notesStartY + 12);
+    doc.setTextColor(120, 120, 120);
+    doc.text("No resolution notes provided.", 20, notesStartY + 13);
   }
 
+  // Subtle watermark
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(48);
+  doc.setTextColor(239, 244, 255);
+  doc.text("ACME", 60, 210, { angle: 25 });
+
   // Footer
-  doc.setDrawColor(220, 220, 220);
+  doc.setDrawColor(230, 230, 230);
   doc.setLineWidth(0.2);
-  doc.line(14, 270, 196, 270);
-  doc.setFontSize(10);
-  doc.setTextColor(180, 180, 180);
-  doc.text("Generated by ACME Services · " + new Date().toLocaleString(), 16, 277);
+  doc.line(17, 280, 193, 280);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(10.3);
+  doc.setTextColor(150, 150, 150);
+  doc.text(
+    `Generated by ACME Services  •  ${new Date().toLocaleString()}`,
+    19,
+    285
+  );
 
   doc.save(`ServiceRequest-${request.ticketId}.pdf`);
 }
