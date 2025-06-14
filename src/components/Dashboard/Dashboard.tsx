@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Monitor, FileText, Folder, AlertCircle, CheckCircle } from 'lucide-react';
+import { PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardStats } from '../../types';
 
@@ -14,6 +15,25 @@ const mockStats: DashboardStats = {
   availableAssets: 23,
   pendingRequests: 5,
   resolvedToday: 8
+};
+
+const PIE_COLORS = [
+  "#3b82f6", // blue
+  "#10b981", // green
+  "#f59e42", // orange
+  "#a78bfa", // purple
+  "#ef4444", // red
+  "#22c55e", // green
+];
+
+const getPieData = (title: string, value: number) => {
+  // Mock: Render as completed vs. rest for demonstration
+  let total = value;
+  let available = Math.max(1, Math.round(value * 0.75));
+  return [
+    { name: "Stat", value: value },
+    { name: "Other", value: available }
+  ];
 };
 
 const Dashboard: React.FC = () => {
@@ -31,17 +51,42 @@ const Dashboard: React.FC = () => {
     icon: React.ComponentType<{ className?: string }>;
     color: string;
     description?: string;
-  }> = ({ title, value, icon: Icon, color, description }) => (
+    pieColor: string;
+  }> = ({ title, value, icon: Icon, color, description, pieColor }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className={`h-4 w-4 ${color}`} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
-        )}
+        {/* Desktop: Pie ring, stat, etc */}
+        <div className="flex items-center space-x-3">
+          <div className="hidden xl:flex items-center justify-center" style={{ minWidth: 56, minHeight: 56 }}>
+            <PieChart width={56} height={56}>
+              <Pie
+                data={getPieData(title, value)}
+                dataKey="value"
+                innerRadius={20}
+                outerRadius={28}
+                stroke="none"
+                paddingAngle={2}
+                startAngle={90}
+                endAngle={-270}
+                cx={28}
+                cy={28}
+              >
+                <Cell key="cell-0" fill={pieColor} />
+                <Cell key="cell-1" fill="#e5e7eb" />
+              </Pie>
+            </PieChart>
+          </div>
+          <div>
+            <div className="text-2xl font-bold">{value}</div>
+            {description && (
+              <p className="text-xs text-muted-foreground">{description}</p>
+            )}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -67,6 +112,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.totalClients}
           icon={Users}
           color="text-blue-600"
+          pieColor={PIE_COLORS[0]}
           description="Active client accounts"
         />
         <StatCard
@@ -74,6 +120,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.activeDevices}
           icon={Monitor}
           color="text-green-600"
+          pieColor={PIE_COLORS[1]}
           description="Devices under management"
         />
         <StatCard
@@ -81,6 +128,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.openTickets}
           icon={FileText}
           color="text-orange-600"
+          pieColor={PIE_COLORS[2]}
           description="Requires attention"
         />
         <StatCard
@@ -88,6 +136,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.availableAssets}
           icon={Folder}
           color="text-purple-600"
+          pieColor={PIE_COLORS[3]}
           description="Ready for assignment"
         />
         <StatCard
@@ -95,6 +144,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.pendingRequests}
           icon={AlertCircle}
           color="text-red-600"
+          pieColor={PIE_COLORS[4]}
           description="Awaiting approval"
         />
         <StatCard
@@ -102,6 +152,7 @@ const Dashboard: React.FC = () => {
           value={mockStats.resolvedToday}
           icon={CheckCircle}
           color="text-green-600"
+          pieColor={PIE_COLORS[5]}
           description="Tickets completed"
         />
       </div>

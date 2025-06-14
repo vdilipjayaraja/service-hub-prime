@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, Clock, AlertCircle, CheckCircle, XCircle, UserCheck } from 'lucide-react';
+import { ArrowLeft, Save, Clock, AlertCircle, CheckCircle, XCircle, UserCheck, FileText } from 'lucide-react';
 import { ServiceRequest } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -25,7 +25,8 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
   const [assignedTo, setAssignedTo] = useState(request.assignedTo || '');
 
   const canEdit = user?.role === 'admin' || user?.role === 'technician';
-  const canAssign = user?.role === 'admin';
+  // Don't allow assignment UI for resolved tickets
+  const canAssign = (user?.role === 'admin') && status !== 'resolved';
   const availableTechnicians = getAvailableTechnicians();
   const assignedTechnician = request.assignedTo ? getTechnicianById(request.assignedTo) : null;
 
@@ -93,6 +94,13 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
     });
   };
 
+  // PDF download handler for resolved tickets
+  const handleDownloadPdf = () => {
+    import("../../utils/serviceRequestPdf").then(({ generateServiceRequestPdf }) => {
+      generateServiceRequestPdf({ ...request, resolutionNotes });
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -107,6 +115,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
           </div>
         </div>
         <div className="flex space-x-2">
+          {/* Hide Assign for resolved tickets */}
           {canAssign && !request.assignedTo && (
             <Button onClick={handleAssign} disabled={!assignedTo}>
               <UserCheck className="mr-2 h-4 w-4" />
@@ -117,6 +126,13 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
             <Button onClick={handleUpdate}>
               <Save className="mr-2 h-4 w-4" />
               Save Changes
+            </Button>
+          )}
+          {/* Show Download PDF button if resolved */}
+          {status === 'resolved' && (
+            <Button variant="outline" onClick={handleDownloadPdf}>
+              <FileText className="mr-2 h-4 w-4" />
+              Download PDF Report
             </Button>
           )}
         </div>
