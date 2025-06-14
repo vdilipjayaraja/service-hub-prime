@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,9 @@ import ClientList from "./components/Clients/ClientList";
 import ServiceRequestList from "./components/ServiceRequests/ServiceRequestList";
 import ProfilePage from "./components/Profile/ProfilePage";
 import SettingsPage from "./components/Settings/SettingsPage";
+import DeviceManagement from "./components/Devices/DeviceManagement";
+import CompanyAssets from "./components/Assets/CompanyAssets";
+import TechnicianManagement from "./components/Technicians/TechnicianManagement";
 
 const queryClient = new QueryClient();
 
@@ -46,11 +48,11 @@ const AppRoutes = () => {
       }>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="clients" element={<ClientList />} />
-        <Route path="devices" element={<div className="p-6">Device Management - Coming Soon</div>} />
+        <Route path="devices" element={<DeviceManagement />} />
         <Route path="service-requests" element={<ServiceRequestList />} />
         <Route path="my-requests" element={<ServiceRequestList />} />
-        <Route path="assets" element={<div className="p-6">Company Assets - Coming Soon</div>} />
-        <Route path="technicians" element={<div className="p-6">Technician Management - Coming Soon</div>} />
+        <Route path="assets" element={<CompanyAssets />} />
+        <Route path="technicians" element={<TechnicianManagement />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

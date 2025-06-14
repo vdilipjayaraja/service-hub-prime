@@ -11,9 +11,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { 
   Shield, 
   Bell, 
-  Palette, 
   Globe, 
-  Lock, 
   Eye, 
   EyeOff 
 } from 'lucide-react';
@@ -38,13 +36,6 @@ const SettingsPage: React.FC = () => {
     weeklyReports: false
   });
 
-  const [preferences, setPreferences] = useState({
-    theme: 'light',
-    language: 'en',
-    timezone: 'UTC',
-    dateFormat: 'MM/DD/YYYY'
-  });
-
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordForm(prev => ({
@@ -55,13 +46,6 @@ const SettingsPage: React.FC = () => {
 
   const handleNotificationChange = (key: string, value: boolean) => {
     setNotifications(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
-  const handlePreferenceChange = (key: string, value: string) => {
-    setPreferences(prev => ({
       ...prev,
       [key]: value
     }));
@@ -79,11 +63,10 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
@@ -280,74 +263,6 @@ const SettingsPage: React.FC = () => {
                     />
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="preferences" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Palette className="w-5 h-5 mr-2" />
-                Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="theme">Theme</Label>
-                  <select
-                    id="theme"
-                    className="w-full p-2 border rounded-md"
-                    value={preferences.theme}
-                    onChange={(e) => handlePreferenceChange('theme', e.target.value)}
-                  >
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="system">System</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="language">Language</Label>
-                  <select
-                    id="language"
-                    className="w-full p-2 border rounded-md"
-                    value={preferences.language}
-                    onChange={(e) => handlePreferenceChange('language', e.target.value)}
-                  >
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <select
-                    id="timezone"
-                    className="w-full p-2 border rounded-md"
-                    value={preferences.timezone}
-                    onChange={(e) => handlePreferenceChange('timezone', e.target.value)}
-                  >
-                    <option value="UTC">UTC</option>
-                    <option value="EST">Eastern Time</option>
-                    <option value="PST">Pacific Time</option>
-                    <option value="CST">Central Time</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date-format">Date Format</Label>
-                  <select
-                    id="date-format"
-                    className="w-full p-2 border rounded-md"
-                    value={preferences.dateFormat}
-                    onChange={(e) => handlePreferenceChange('dateFormat', e.target.value)}
-                  >
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
-                </div>
               </div>
             </CardContent>
           </Card>
