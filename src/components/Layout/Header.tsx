@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, LogOut, Bell } from 'lucide-react';
+import { User, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +14,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationDropdown from '../Notifications/NotificationDropdown';
+import ThemeToggle from '../Theme/ThemeToggle';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -28,21 +30,17 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+    <header className="bg-background border-b border-border px-6 py-4 flex items-center justify-between">
       <div className="flex items-center space-x-4">
-        <h1 className="text-2xl font-bold text-gray-900">TechSolutions IT</h1>
+        <h1 className="text-2xl font-bold text-foreground">TechSolutions IT</h1>
         <Badge variant="secondary" className="text-xs">
           {user?.role?.toUpperCase()}
         </Badge>
       </div>
       
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="h-5 w-5" />
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-            3
-          </Badge>
-        </Button>
+        <NotificationDropdown />
+        <ThemeToggle />
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
