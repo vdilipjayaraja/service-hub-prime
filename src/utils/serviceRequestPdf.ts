@@ -1,4 +1,3 @@
-
 import { ServiceRequest } from "../types";
 import jsPDF from "jspdf";
 
@@ -14,7 +13,10 @@ function addLabelValue(
   options?: { bold?: boolean; icon?: string }
 ) {
   const leftX = col === 1 ? 22 : 115;
-  const labelColor = options?.bold ? [38, 110, 232] : [60, 60, 60];
+  // Explicitly type the label color tuple for TypeScript
+  const labelColor: [number, number, number] = options?.bold
+    ? [38, 110, 232]
+    : [60, 60, 60];
   doc.setFont('helvetica', options?.bold ? 'bold' : 'normal');
   doc.setTextColor(...labelColor);
   let labelTxt = options?.icon ? `${options.icon} ${label}:` : `${label}:`;
