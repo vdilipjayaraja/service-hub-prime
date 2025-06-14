@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,19 +17,26 @@ interface ServiceRequestDetailProps {
   onBack: () => void;
 }
 
+const UNASSIGNED = "unassigned";
+
 const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, onUpdate, onBack }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { getAvailableTechnicians, getTechnicianById } = useTechnicians();
+
+  // Use UNASSIGNED constant if assignedTo is not present
+  const [assignedTo, setAssignedTo] = useState(
+    request.assignedTo && request.assignedTo !== "" ? request.assignedTo : UNASSIGNED
+  );
   const [status, setStatus] = useState(request.status);
   const [resolutionNotes, setResolutionNotes] = useState(request.resolutionNotes || '');
-  const [assignedTo, setAssignedTo] = useState(request.assignedTo || '');
 
   const canEdit = user?.role === 'admin' || user?.role === 'technician';
   // Don't allow assignment UI for resolved tickets
   const canAssign = (user?.role === 'admin') && status !== 'resolved';
   const availableTechnicians = getAvailableTechnicians();
-  const assignedTechnician = request.assignedTo ? getTechnicianById(request.assignedTo) : null;
+  // Only get assigned technician if not UNASSIGNED
+  const assignedTechnician = assignedTo !== UNASSIGNED ? getTechnicianById(assignedTo) : null;
 
   const getStatusIcon = (status: ServiceRequest['status']) => {
     switch (status) {
@@ -53,19 +61,25 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
   };
 
   const handleUpdate = () => {
+    // Whenever assignedTo is UNASSIGNED, store as undefined/null in update
+    const isAssigned = assignedTo !== UNASSIGNED;
     const updates: Partial<ServiceRequest> = {
       status,
       resolutionNotes,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      assignedTo: isAssigned ? assignedTo : undefined,
     };
 
     // If assignment changed, add assignment timestamp
-    if (assignedTo !== request.assignedTo) {
-      updates.assignedTo = assignedTo;
-      updates.assignedAt = new Date().toISOString();
-      if (assignedTo && status === 'open') {
-        updates.status = 'assigned';
-        setStatus('assigned');
+    if (assignedTo !== (request.assignedTo && request.assignedTo !== "" ? request.assignedTo : UNASSIGNED)) {
+      if (isAssigned) {
+        updates.assignedAt = new Date().toISOString();
+        if (status === 'open') {
+          updates.status = 'assigned';
+          setStatus('assigned');
+        }
+      } else {
+        updates.assignedAt = undefined;
       }
     }
 
@@ -77,7 +91,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
   };
 
   const handleAssign = () => {
-    if (!assignedTo) return;
+    if (assignedTo === UNASSIGNED) return;
 
     const updates: Partial<ServiceRequest> = {
       assignedTo,
@@ -116,8 +130,8 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
         </div>
         <div className="flex space-x-2">
           {/* Hide Assign for resolved tickets */}
-          {canAssign && !request.assignedTo && (
-            <Button onClick={handleAssign} disabled={!assignedTo}>
+          {canAssign && assignedTo === UNASSIGNED && (
+            <Button onClick={handleAssign} disabled={assignedTo === UNASSIGNED}>
               <UserCheck className="mr-2 h-4 w-4" />
               Assign
             </Button>
@@ -211,7 +225,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
                       <SelectValue placeholder="Select technician" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
                       {availableTechnicians.map(tech => (
                         <SelectItem key={tech.id} value={tech.id}>
                           {tech.name} ({tech.activeRequests} active)
@@ -270,3 +284,4 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
 };
 
 export default ServiceRequestDetail;
+
