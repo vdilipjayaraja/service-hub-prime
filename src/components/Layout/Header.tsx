@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Settings, LogOut } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { User, Settings, LogOut, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import ThemeToggle from '../Theme/ThemeToggle';
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -29,9 +30,22 @@ const Header: React.FC = () => {
     navigate('/settings');
   };
 
+  const handleBackClick = () => {
+    window.history.back();
+  };
+
+  // Don't show back button on dashboard (home page)
+  const showBackButton = location.pathname !== '/dashboard';
+
   return (
     <header className="bg-background border-b border-border px-6 py-4 flex items-center justify-between">
       <div className="flex items-center space-x-4">
+        {showBackButton && (
+          <Button variant="ghost" size="sm" onClick={handleBackClick}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        )}
         <h1 className="text-2xl font-bold text-foreground">TechSolutions IT</h1>
         <Badge variant="secondary" className="text-xs">
           {user?.role?.toUpperCase()}
