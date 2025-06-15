@@ -31,7 +31,7 @@ const Header: React.FC = () => {
   };
 
   const handleBackClick = () => {
-    window.history.back();
+    navigate(-1);
   };
 
   // Don't show back button on dashboard (home page)

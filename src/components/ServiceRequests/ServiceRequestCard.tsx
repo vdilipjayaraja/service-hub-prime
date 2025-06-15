@@ -105,7 +105,7 @@ const ServiceRequestCard: React.FC<ServiceRequestCardProps> = ({
           </div>
           
           <div className="flex space-x-2 ml-4">
-            <Button variant="ghost" size="sm" onClick={() => onView(request)} title="View Details">
+            <Button variant="ghost" size="sm" onClick={() => onView(request)} title="Report Preview">
               <Eye className="h-4 w-4" />
             </Button>
             {canEdit && (
