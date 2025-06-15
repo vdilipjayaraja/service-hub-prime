@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,11 +32,13 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
   const [resolutionNotes, setResolutionNotes] = useState(request.resolutionNotes || '');
 
   const canEdit = user?.role === 'admin' || user?.role === 'technician';
-  // Don't allow assignment UI for resolved tickets
-  const canAssign = (user?.role === 'admin') && status !== 'resolved';
+  // Prevent assignment/reassignment for resolved tickets
+  const canAssign = (user?.role === 'admin') && status !== 'resolved' && request.status !== 'resolved';
   const availableTechnicians = getAvailableTechnicians();
   // Only get assigned technician if not UNASSIGNED
   const assignedTechnician = assignedTo !== UNASSIGNED ? getTechnicianById(assignedTo) : null;
+
+  const isResolved = request.status === 'resolved';
 
   const getStatusIcon = (status: ServiceRequest['status']) => {
     switch (status) {
@@ -62,6 +63,16 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
   };
 
   const handleUpdate = () => {
+    // Prevent updates that would change assignment for resolved tickets
+    if (isResolved && assignedTo !== (request.assignedTo && request.assignedTo !== "" ? request.assignedTo : UNASSIGNED)) {
+      toast({
+        title: "Error",
+        description: "Cannot change assignment for resolved tickets",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Whenever assignedTo is UNASSIGNED, store as undefined/null in update
     const isAssigned = assignedTo !== UNASSIGNED;
     const updates: Partial<ServiceRequest> = {
@@ -71,8 +82,8 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
       assignedTo: isAssigned ? assignedTo : undefined,
     };
 
-    // If assignment changed, add assignment timestamp
-    if (assignedTo !== (request.assignedTo && request.assignedTo !== "" ? request.assignedTo : UNASSIGNED)) {
+    // If assignment changed and not resolved, add assignment timestamp
+    if (!isResolved && assignedTo !== (request.assignedTo && request.assignedTo !== "" ? request.assignedTo : UNASSIGNED)) {
       if (isAssigned) {
         updates.assignedAt = new Date().toISOString();
         if (status === 'open') {
@@ -92,7 +103,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
   };
 
   const handleAssign = () => {
-    if (assignedTo === UNASSIGNED) return;
+    if (assignedTo === UNASSIGNED || isResolved) return;
 
     const updates: Partial<ServiceRequest> = {
       assignedTo,
@@ -127,11 +138,17 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{request.title}</h1>
             <p className="text-gray-600">Ticket: {request.ticketId}</p>
+            {isResolved && (
+              <Badge className="mt-1 bg-green-100 text-green-800">
+                <CheckCircle className="mr-1 h-3 w-3" />
+                Resolved - No reassignment allowed
+              </Badge>
+            )}
           </div>
         </div>
         <div className="flex space-x-2">
-          {/* Hide Assign for resolved tickets */}
-          {canAssign && assignedTo === UNASSIGNED && (
+          {/* Hide Assign button for resolved tickets */}
+          {canAssign && assignedTo === UNASSIGNED && !isResolved && (
             <Button onClick={handleAssign} disabled={assignedTo === UNASSIGNED}>
               <UserCheck className="mr-2 h-4 w-4" />
               Assign
@@ -165,7 +182,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
                 <p className="text-gray-700 mt-1">{request.description}</p>
               </div>
               
-              {canEdit && (
+              {canEdit && !isResolved && (
                 <div>
                   <h4 className="font-semibold mb-2">Resolution Notes</h4>
                   <Textarea
@@ -177,11 +194,11 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
                 </div>
               )}
               
-              {!canEdit && request.resolutionNotes && (
+              {(isResolved || request.resolutionNotes) && (
                 <div>
                   <h4 className="font-semibold">Resolution</h4>
                   <div className="mt-1 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-green-800">{request.resolutionNotes}</p>
+                    <p className="text-green-800">{request.resolutionNotes || resolutionNotes}</p>
                   </div>
                 </div>
               )}
@@ -197,7 +214,7 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
             <CardContent className="space-y-4">
               <div>
                 <h4 className="font-semibold mb-2">Current Status</h4>
-                {canEdit ? (
+                {canEdit && !isResolved ? (
                   <Select value={status} onValueChange={(value: ServiceRequest['status']) => setStatus(value)}>
                     <SelectTrigger>
                       <SelectValue />
@@ -218,7 +235,8 @@ const ServiceRequestDetail: React.FC<ServiceRequestDetailProps> = ({ request, on
                 )}
               </div>
 
-              {canAssign && (
+              {/* Hide assignment controls for resolved tickets */}
+              {canAssign && !isResolved && (
                 <div>
                   <h4 className="font-semibold mb-2">Assign Technician</h4>
                   <Select value={assignedTo} onValueChange={setAssignedTo}>

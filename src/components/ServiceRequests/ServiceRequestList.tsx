@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, UserCheck } from 'lucide-react';
@@ -83,37 +84,51 @@ const ServiceRequestList: React.FC = () => {
   const canAssign = user?.role === 'admin';
   const canEdit = user?.role === 'admin' || user?.role === 'technician';
 
-  const filteredRequests = requests.filter(request => {
-    const matchesSearch = request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.ticketId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.clientName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || request.priority === priorityFilter;
-    
-    // Assignment filter
-    let matchesAssignment = true;
-    if (assignmentFilter === 'unassigned') {
-      matchesAssignment = !request.assignedTo;
-    } else if (assignmentFilter === 'assigned') {
-      matchesAssignment = !!request.assignedTo;
-    } else if (assignmentFilter === 'my_assignments' && user?.role === 'technician') {
-      matchesAssignment = request.assignedTo === user.id;
-    }
-    
-    // Role-based filtering
-    if (user?.role === 'client') {
-      return matchesSearch && matchesStatus && matchesPriority && matchesAssignment && request.clientId === user.id;
-    }
-    if (user?.role === 'technician') {
-      return matchesSearch && matchesStatus && matchesPriority && matchesAssignment && request.assignedTo === user.id;
-    }
-    
-    return matchesSearch && matchesStatus && matchesPriority && matchesAssignment;
-  });
+  // Separate active and resolved requests
+  const activeRequests = requests.filter(request => request.status !== 'resolved');
+  const resolvedRequests = requests.filter(request => request.status === 'resolved');
 
-  const selectedRequestObjects = requests.filter(req => selectedRequests.includes(req.id));
+  const filterRequests = (requestList: ServiceRequest[]) => {
+    return requestList.filter(request => {
+      const matchesSearch = request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           request.ticketId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           request.clientName?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+      const matchesPriority = priorityFilter === 'all' || request.priority === priorityFilter;
+      
+      // Assignment filter
+      let matchesAssignment = true;
+      if (assignmentFilter === 'unassigned') {
+        matchesAssignment = !request.assignedTo;
+      } else if (assignmentFilter === 'assigned') {
+        matchesAssignment = !!request.assignedTo;
+      } else if (assignmentFilter === 'my_assignments' && user?.role === 'technician') {
+        matchesAssignment = request.assignedTo === user.id;
+      }
+      
+      // Role-based filtering
+      if (user?.role === 'client') {
+        return matchesSearch && matchesStatus && matchesPriority && matchesAssignment && request.clientId === user.id;
+      }
+      if (user?.role === 'technician') {
+        return matchesSearch && matchesStatus && matchesPriority && matchesAssignment && request.assignedTo === user.id;
+      }
+      
+      return matchesSearch && matchesStatus && matchesPriority && matchesAssignment;
+    });
+  };
+
+  const filteredActiveRequests = filterRequests(activeRequests);
+  const filteredResolvedRequests = filterRequests(resolvedRequests);
+
+  // Only allow selection of active requests (not resolved)
+  const selectedRequestObjects = activeRequests.filter(req => selectedRequests.includes(req.id));
 
   const handleSelectRequest = (requestId: string, checked: boolean) => {
+    const request = requests.find(r => r.id === requestId);
+    // Prevent selection of resolved requests
+    if (request?.status === 'resolved') return;
+    
     if (checked) {
       setSelectedRequests(prev => [...prev, requestId]);
     } else {
@@ -123,7 +138,8 @@ const ServiceRequestList: React.FC = () => {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedRequests(filteredRequests.map(req => req.id));
+      // Only select active requests, not resolved ones
+      setSelectedRequests(filteredActiveRequests.map(req => req.id));
     } else {
       setSelectedRequests([]);
     }
@@ -238,18 +254,28 @@ const ServiceRequestList: React.FC = () => {
         user={user}
       />
 
+      {/* Active Service Requests */}
       <div className="space-y-4">
-        {canAssign && filteredRequests.length > 0 && (
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">Active Service Requests</h2>
+          {canAssign && filteredActiveRequests.length > 0 && (
+            <span className="text-sm text-gray-600">
+              {selectedRequests.length} of {filteredActiveRequests.length} selected
+            </span>
+          )}
+        </div>
+
+        {canAssign && filteredActiveRequests.length > 0 && (
           <BulkSelectionBar
             selectedCount={selectedRequests.length}
-            totalCount={filteredRequests.length}
-            allSelected={selectedRequests.length === filteredRequests.length}
+            totalCount={filteredActiveRequests.length}
+            allSelected={selectedRequests.length === filteredActiveRequests.length}
             onSelectAll={handleSelectAll}
             onBulkAssign={() => setShowAssignmentDialog(true)}
           />
         )}
 
-        {filteredRequests.map((request) => (
+        {filteredActiveRequests.map((request) => (
           <ServiceRequestCard
             key={request.id}
             request={request}
@@ -261,8 +287,28 @@ const ServiceRequestList: React.FC = () => {
           />
         ))}
 
-        {filteredRequests.length === 0 && <EmptyState user={user} />}
+        {filteredActiveRequests.length === 0 && <EmptyState user={user} />}
       </div>
+
+      {/* Resolved Service Requests */}
+      {filteredResolvedRequests.length > 0 && (
+        <div className="space-y-4">
+          <div className="border-t pt-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Resolved Service Requests</h2>
+            {filteredResolvedRequests.map((request) => (
+              <ServiceRequestCard
+                key={request.id}
+                request={request}
+                onView={handleViewRequest}
+                canEdit={false}
+                canSelect={false}
+                isSelected={false}
+                onSelect={() => {}}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {showAssignmentDialog && (
         <AssignmentDialog
