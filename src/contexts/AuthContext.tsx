@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabase';
+import dummyUsersData from '../data/dummyUsers.json';
 
 interface AuthContextType {
   user: User | null;
@@ -69,30 +70,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithDummyCredentials = (email: string, password: string): User | null => {
+    console.log('Attempting dummy login for:', email);
+    const dummyUser = dummyUsersData.users.find(
+      user => user.email === email && user.password === password
+    );
+    
+    if (dummyUser) {
+      console.log('Dummy login successful for:', dummyUser.name);
+      return {
+        id: dummyUser.id,
+        name: dummyUser.name,
+        email: dummyUser.email,
+        role: dummyUser.role as 'admin' | 'technician' | 'client',
+        avatar: dummyUser.avatar
+      };
+    }
+    
+    return null;
+  };
+
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
     try {
+      // First try Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (error) {
-        console.error('Login error:', error);
-        setIsLoading(false);
-        return false;
-      }
-
-      if (data.user) {
+      if (!error && data.user) {
         await fetchUserProfile(data.user.id);
         return true;
       }
+
+      // If Supabase auth fails, try dummy credentials
+      console.log('Supabase auth failed, trying dummy credentials...');
+      const dummyUser = loginWithDummyCredentials(email, password);
       
+      if (dummyUser) {
+        setUser(dummyUser);
+        setIsLoading(false);
+        return true;
+      }
+      
+      console.error('Login failed for both Supabase and dummy credentials');
       setIsLoading(false);
       return false;
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Try dummy credentials as fallback
+      const dummyUser = loginWithDummyCredentials(email, password);
+      
+      if (dummyUser) {
+        setUser(dummyUser);
+        setIsLoading(false);
+        return true;
+      }
+      
       setIsLoading(false);
       return false;
     }
