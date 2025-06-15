@@ -56,6 +56,8 @@ const ServiceRequestCard: React.FC<ServiceRequestCardProps> = ({
     }
   };
 
+  const isResolved = request.status === 'resolved';
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-6">
@@ -105,9 +107,11 @@ const ServiceRequestCard: React.FC<ServiceRequestCardProps> = ({
           </div>
           
           <div className="flex space-x-2 ml-4">
-            <Button variant="ghost" size="sm" onClick={() => onView(request)} title="Report Preview">
-              <Eye className="h-4 w-4" />
-            </Button>
+            {isResolved && (
+              <Button variant="ghost" size="sm" onClick={() => onView(request)} title="Report Preview">
+                <Eye className="h-4 w-4" />
+              </Button>
+            )}
             {canEdit && (
               <Button variant="ghost" size="sm" onClick={() => onView(request)} title="Edit Request">
                 <Edit className="h-4 w-4" />
