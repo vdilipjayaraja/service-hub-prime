@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,8 @@ interface Asset {
   status: 'Available' | 'In Use' | 'Maintenance' | 'Retired' | 'Lost';
   assignedTo: string;
   location: string;
+  deployedTo?: string;
+  deploymentDuration?: string;
   purchaseDate: string;
   value: number;
   serialNumber: string;
@@ -48,7 +49,7 @@ const CompanyAssets: React.FC = () => {
       category: 'Equipment',
       status: 'Available',
       assignedTo: 'IT Department',
-      location: 'Conference Room A',
+      location: 'Warehouse',
       purchaseDate: '2023-06-15',
       value: 1200,
       serialNumber: 'PROJ-001',
@@ -63,6 +64,8 @@ const CompanyAssets: React.FC = () => {
       status: 'In Use',
       assignedTo: 'Sarah Johnson',
       location: 'Office B-201',
+      deployedTo: 'Office B-201',
+      deploymentDuration: '6 months',
       purchaseDate: '2023-03-20',
       value: 800,
       serialNumber: 'DESK-ST-001',
@@ -75,6 +78,10 @@ const CompanyAssets: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
+  const [deployAsset, setDeployAsset] = useState<Asset | null>(null);
+  const [deploymentLocation, setDeploymentLocation] = useState('');
+  const [deploymentDuration, setDeploymentDuration] = useState('');
 
   const getStatusBadgeColor = (status: Asset['status']) => {
     switch (status) {
@@ -105,6 +112,61 @@ const CompanyAssets: React.FC = () => {
   );
 
   const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+
+  const handleDeploy = (asset: Asset) => {
+    setDeployAsset(asset);
+    setIsDeployDialogOpen(true);
+  };
+
+  const confirmDeploy = () => {
+    if (deployAsset && deploymentLocation && deploymentDuration) {
+      setAssets(assets.map(asset => 
+        asset.id === deployAsset.id 
+          ? { 
+              ...asset, 
+              status: 'In Use',
+              deployedTo: deploymentLocation,
+              deploymentDuration: deploymentDuration,
+              location: deploymentLocation
+            }
+          : asset
+      ));
+      setIsDeployDialogOpen(false);
+      setDeployAsset(null);
+      setDeploymentLocation('');
+      setDeploymentDuration('');
+    }
+  };
+
+  const handleRetrieve = (asset: Asset) => {
+    if (confirm(`Are you sure you want to retrieve ${asset.name}?`)) {
+      setAssets(assets.map(a => 
+        a.id === asset.id 
+          ? { 
+              ...a, 
+              status: 'Available',
+              deployedTo: undefined,
+              deploymentDuration: undefined,
+              location: 'Warehouse'
+            }
+          : a
+      ));
+    }
+  };
+
+  const getStatusDisplay = (asset: Asset) => {
+    if (asset.deployedTo && asset.status === 'In Use') {
+      return `Deployed to ${asset.deployedTo}`;
+    }
+    return asset.status;
+  };
+
+  const getLocationDisplay = (asset: Asset) => {
+    if (asset.deployedTo) {
+      return `${asset.deployedTo} (${asset.deploymentDuration})`;
+    }
+    return asset.location;
+  };
 
   return (
     <div className="space-y-6">
@@ -231,6 +293,62 @@ const CompanyAssets: React.FC = () => {
         </Card>
       </div>
 
+      {/* Deploy Dialog */}
+      <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deploy Asset</DialogTitle>
+          </DialogHeader>
+          {deployAsset && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Asset: {deployAsset.name}</Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deployment-location">Deployment Location</Label>
+                <Select value={deploymentLocation} onValueChange={setDeploymentLocation}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select deployment location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Office A-101">Office A-101</SelectItem>
+                    <SelectItem value="Office B-201">Office B-201</SelectItem>
+                    <SelectItem value="Conference Room A">Conference Room A</SelectItem>
+                    <SelectItem value="Conference Room B">Conference Room B</SelectItem>
+                    <SelectItem value="Remote Site">Remote Site</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deployment-duration">Deployment Duration</Label>
+                <Select value={deploymentDuration} onValueChange={setDeploymentDuration}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1 week">1 week</SelectItem>
+                    <SelectItem value="2 weeks">2 weeks</SelectItem>
+                    <SelectItem value="1 month">1 month</SelectItem>
+                    <SelectItem value="3 months">3 months</SelectItem>
+                    <SelectItem value="6 months">6 months</SelectItem>
+                    <SelectItem value="1 year">1 year</SelectItem>
+                    <SelectItem value="Indefinite">Indefinite</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsDeployDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={confirmDeploy}>
+                  Deploy Asset
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <CardTitle>Asset Inventory</CardTitle>
@@ -274,14 +392,24 @@ const CompanyAssets: React.FC = () => {
                   <TableCell>{asset.category}</TableCell>
                   <TableCell>
                     <Badge className={getStatusBadgeColor(asset.status)}>
-                      {asset.status}
+                      {getStatusDisplay(asset)}
                     </Badge>
                   </TableCell>
                   <TableCell>{asset.assignedTo}</TableCell>
-                  <TableCell>{asset.location}</TableCell>
+                  <TableCell>{getLocationDisplay(asset)}</TableCell>
                   <TableCell>${asset.value.toLocaleString()}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
+                      {asset.status === 'Available' && (
+                        <Button variant="ghost" size="sm" onClick={() => handleDeploy(asset)} title="Deploy Asset">
+                          <span className="text-xs">Deploy</span>
+                        </Button>
+                      )}
+                      {asset.deployedTo && (
+                        <Button variant="ghost" size="sm" onClick={() => handleRetrieve(asset)} title="Retrieve Asset">
+                          <span className="text-xs">Retrieve</span>
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => setSelectedAsset(asset)}>
                         <Edit className="w-4 h-4" />
                       </Button>
