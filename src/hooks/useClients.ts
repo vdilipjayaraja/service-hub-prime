@@ -10,7 +10,7 @@ export const useClients = () => {
     queryKey: ['clients'],
     queryFn: async () => {
       try {
-        const data = await apiService.getClients();
+        const data: any = await apiService.getClients();
         return data.map((client: any) => ({
           id: client.id,
           name: client.name,

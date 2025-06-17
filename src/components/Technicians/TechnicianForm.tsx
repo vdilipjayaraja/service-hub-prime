@@ -7,32 +7,59 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Save } from 'lucide-react';
-import { Client } from '../../types';
 import { useToast } from '@/components/ui/use-toast';
 import PasswordAssignmentTab from '../Auth/PasswordAssignmentTab';
 
-interface ClientFormProps {
-  client?: Client;
-  onSave: (client: Omit<Client, 'id'>) => void;
+interface TechnicianFormData {
+  name: string;
+  email: string;
+  phone: string;
+  specialization: string[];
+  status: 'available' | 'busy' | 'offline';
+}
+
+interface TechnicianFormProps {
+  technician?: any;
+  onSave: (technician: TechnicianFormData) => void;
   onCancel: () => void;
 }
 
-const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => {
+const specializations = [
+  'Hardware Repair',
+  'Software Installation',
+  'Network Configuration',
+  'Security Systems',
+  'Database Management',
+  'Mobile Device Support',
+  'Server Maintenance',
+  'Help Desk Support'
+];
+
+const TechnicianForm: React.FC<TechnicianFormProps> = ({ technician, onSave, onCancel }) => {
   const { toast } = useToast();
   const [password, setPassword] = useState('');
-  const [formData, setFormData] = useState({
-    name: client?.name || '',
-    contactPerson: client?.contactPerson || '',
-    email: client?.email || '',
-    phone: client?.phone || '',
-    address: client?.address || '',
-    type: client?.type || 'individual' as Client['type']
+  const [formData, setFormData] = useState<TechnicianFormData>({
+    name: technician?.name || '',
+    email: technician?.email || '',
+    phone: technician?.phone || '',
+    specialization: technician?.specialization || [],
+    status: technician?.status || 'available'
   });
+
+  const handleSpecializationChange = (spec: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      specialization: checked 
+        ? [...prev.specialization, spec]
+        : prev.specialization.filter(s => s !== spec)
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.contactPerson || !formData.email) {
+    if (!formData.name || !formData.email) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -41,25 +68,20 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
       return;
     }
 
-    if (!client && !password) {
+    if (!technician && !password) {
       toast({
         title: "Error",
-        description: "Please assign a password for the new client",
+        description: "Please assign a password for the new technician",
         variant: "destructive"
       });
       return;
     }
 
-    onSave({
-      ...formData,
-      createdAt: client?.createdAt || new Date().toISOString(),
-      deviceCount: client?.deviceCount || 0,
-      activeRequests: client?.activeRequests || 0
-    });
+    onSave(formData);
 
     toast({
       title: "Success",
-      description: `Client ${client ? 'updated' : 'created'} successfully`
+      description: `Technician ${technician ? 'updated' : 'created'} successfully`
     });
   };
 
@@ -71,47 +93,34 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
           Back
         </Button>
         <h1 className="text-3xl font-bold text-gray-900">
-          {client ? 'Edit Client' : 'Add New Client'}
+          {technician ? 'Edit Technician' : 'Add New Technician'}
         </h1>
       </div>
 
-      <Tabs defaultValue="client-info" className="space-y-6">
+      <Tabs defaultValue="technician-info" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="client-info">Client Information</TabsTrigger>
-          <TabsTrigger value="password" disabled={!!client}>Password Assignment</TabsTrigger>
+          <TabsTrigger value="technician-info">Technician Information</TabsTrigger>
+          <TabsTrigger value="password" disabled={!!technician}>Password Assignment</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="client-info">
+        <TabsContent value="technician-info">
           <Card>
             <CardHeader>
-              <CardTitle>Client Information</CardTitle>
+              <CardTitle>Technician Information</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">Client Name *</Label>
+                    <Label htmlFor="name">Full Name *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter client name"
+                      placeholder="Enter full name"
                       required
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="contactPerson">Contact Person *</Label>
-                    <Input
-                      id="contactPerson"
-                      value={formData.contactPerson}
-                      onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                      placeholder="Enter contact person"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="email">Email *</Label>
                     <Input
@@ -123,6 +132,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
                       required
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="phone">Phone</Label>
                     <Input
@@ -132,37 +144,41 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
                       placeholder="Enter phone number"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="busy">Busy</SelectItem>
+                        <SelectItem value="offline">Offline</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="type">Client Type</Label>
-                  <Select value={formData.type} onValueChange={(value: Client['type']) => setFormData({ ...formData, type: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select client type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="managed_site">Managed Site</SelectItem>
-                      <SelectItem value="individual">Individual</SelectItem>
-                      <SelectItem value="walk_in">Walk-in</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="address">Address</Label>
-                  <Textarea
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Enter full address"
-                    rows={3}
-                  />
+                  <Label>Specializations</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                    {specializations.map((spec) => (
+                      <div key={spec} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={spec}
+                          checked={formData.specialization.includes(spec)}
+                          onCheckedChange={(checked) => handleSpecializationChange(spec, !!checked)}
+                        />
+                        <Label htmlFor={spec} className="text-sm">{spec}</Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex space-x-4 pt-4">
                   <Button type="submit">
                     <Save className="mr-2 h-4 w-4" />
-                    {client ? 'Update Client' : 'Create Client'}
+                    {technician ? 'Update Technician' : 'Create Technician'}
                   </Button>
                   <Button type="button" variant="outline" onClick={onCancel}>
                     Cancel
@@ -176,7 +192,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
         <TabsContent value="password">
           <PasswordAssignmentTab 
             onPasswordChange={setPassword}
-            userType="client"
+            userType="technician"
           />
         </TabsContent>
       </Tabs>
@@ -184,4 +200,4 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
   );
 };
 
-export default ClientForm;
+export default TechnicianForm;

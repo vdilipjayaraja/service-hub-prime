@@ -12,7 +12,7 @@ export const useServiceRequests = () => {
     queryKey: ['serviceRequests'],
     queryFn: async () => {
       try {
-        const data = await apiService.getServiceRequests();
+        const data: any = await apiService.getServiceRequests();
         
         // Filter based on user role (client-side filtering for now)
         let filteredData = data;

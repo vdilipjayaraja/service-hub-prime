@@ -9,6 +9,7 @@ import { useDashboardStats } from '../../hooks/useDashboardStats';
 import { useNavigate } from 'react-router-dom';
 import { DashboardStats } from '../../types';
 import { useIsMobile } from '../../hooks/use-mobile';
+import RecentActivityCard from './RecentActivityCard';
 
 // Mock data for demonstration
 const mockStats: DashboardStats = {
@@ -197,32 +198,9 @@ const Dashboard: React.FC = () => {
         />
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity and Quick Actions */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
-            <CardDescription className="text-sm">Latest updates from your IT management system</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 md:space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1 min-w-0 mr-2">
-                    <p className="text-xs md:text-sm font-medium truncate">{activity.action}</p>
-                    <p className="text-xs text-gray-500 truncate">{activity.client} • {activity.time}</p>
-                  </div>
-                  <Badge 
-                    variant={activity.status === 'resolved' ? 'default' : 'secondary'}
-                    className="text-xs flex-shrink-0"
-                  >
-                    {activity.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <RecentActivityCard />
 
         <Card>
           <CardHeader>

@@ -8,7 +8,7 @@ export const useDashboardStats = () => {
     queryKey: ['dashboardStats'],
     queryFn: async () => {
       try {
-        const data = await apiService.getDashboardStats();
+        const data: any = await apiService.getDashboardStats();
         return {
           totalClients: data.total_clients || 0,
           activeDevices: data.active_devices || 0,
