@@ -25,9 +25,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: Home, roles: ['admin', 'technician', 'client'] },
-  { title: 'Clients', href: '/clients', icon: Users, roles: ['admin', 'technician'] },
-  { title: 'Devices', href: '/devices', icon: Monitor, roles: ['admin', 'technician'] },
-  { title: 'Service Requests', href: '/service-requests', icon: FileText, roles: ['admin', 'technician', 'client'] },
+  { title: 'Clients', href: '/clients', icon: Users, roles: ['admin'] },
+  { title: 'Devices', href: '/devices', icon: Monitor, roles: ['admin', 'technician', 'client'] },
+  { title: 'Service Requests', href: '/service-requests', icon: FileText, roles: ['admin', 'technician'] },
   { title: 'Company Assets', href: '/assets', icon: Folder, roles: ['admin', 'technician'] },
   { title: 'Technicians', href: '/technicians', icon: Wrench, roles: ['admin'] },
   { title: 'My Requests', href: '/my-requests', icon: User, roles: ['client'] },

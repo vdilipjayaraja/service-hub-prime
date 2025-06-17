@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,7 +19,7 @@ import TechnicianManagement from "./components/Technicians/TechnicianManagement"
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ children, allowedRoles }) => {
   const { user, isLoading } = useAuth();
   
   if (isLoading) {
@@ -31,6 +32,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
   }
   
   return <>{children}</>;
@@ -47,12 +52,32 @@ const AppRoutes = () => {
         </ProtectedRoute>
       }>
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="clients" element={<ClientList />} />
+        <Route path="clients" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ClientList />
+          </ProtectedRoute>
+        } />
         <Route path="devices" element={<DeviceManagement />} />
-        <Route path="service-requests" element={<ServiceRequestList />} />
-        <Route path="my-requests" element={<ServiceRequestList />} />
-        <Route path="assets" element={<CompanyAssets />} />
-        <Route path="technicians" element={<TechnicianManagement />} />
+        <Route path="service-requests" element={
+          <ProtectedRoute allowedRoles={['admin', 'technician']}>
+            <ServiceRequestList />
+          </ProtectedRoute>
+        } />
+        <Route path="my-requests" element={
+          <ProtectedRoute allowedRoles={['client']}>
+            <ServiceRequestList />
+          </ProtectedRoute>
+        } />
+        <Route path="assets" element={
+          <ProtectedRoute allowedRoles={['admin', 'technician']}>
+            <CompanyAssets />
+          </ProtectedRoute>
+        } />
+        <Route path="technicians" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <TechnicianManagement />
+          </ProtectedRoute>
+        } />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

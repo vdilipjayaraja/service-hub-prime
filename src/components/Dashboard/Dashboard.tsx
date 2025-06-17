@@ -1,10 +1,12 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Monitor, FileText, Folder, AlertCircle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, Monitor, FileText, Folder, AlertCircle, CheckCircle, MapPin } from 'lucide-react';
 import { PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDashboardStats } from '../../hooks/useDashboardStats';
+import { useNavigate } from 'react-router-dom';
 import { DashboardStats } from '../../types';
 
 // Mock data for demonstration
@@ -39,6 +41,7 @@ const getPieData = (title: string, value: number) => {
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { stats, isLoading } = useDashboardStats();
+  const navigate = useNavigate();
 
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
@@ -60,7 +63,6 @@ const Dashboard: React.FC = () => {
         <Icon className={`h-4 w-4 ${color}`} />
       </CardHeader>
       <CardContent>
-        {/* Desktop: Pie ring, stat, etc */}
         <div className="flex items-center space-x-3">
           <div className="hidden xl:flex items-center justify-center" style={{ minWidth: 56, minHeight: 56 }}>
             <PieChart width={56} height={56}>
@@ -92,6 +94,28 @@ const Dashboard: React.FC = () => {
     </Card>
   );
 
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'add-client':
+        navigate('/clients');
+        break;
+      case 'review-assets':
+        navigate('/assets');
+        break;
+      case 'view-tickets':
+        navigate('/service-requests');
+        break;
+      case 'request-asset':
+        navigate('/assets');
+        break;
+      case 'submit-request':
+        navigate('/my-requests');
+        break;
+      default:
+        break;
+    }
+  };
+
   const recentActivity = [
     { id: 1, action: 'New service request', client: 'ABC Corp', time: '2 minutes ago', status: 'open' },
     { id: 2, action: 'Device maintenance completed', client: 'XYZ Ltd', time: '15 minutes ago', status: 'resolved' },
@@ -108,14 +132,25 @@ const Dashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard
-          title="Total Clients"
-          value={stats.totalClients}
-          icon={Users}
-          color="text-blue-600"
-          pieColor={PIE_COLORS[0]}
-          description="Active client accounts"
-        />
+        {user?.role === 'client' ? (
+          <StatCard
+            title="No of Locations"
+            value={stats.totalClients}
+            icon={MapPin}
+            color="text-blue-600"
+            pieColor={PIE_COLORS[0]}
+            description="Managed locations"
+          />
+        ) : (
+          <StatCard
+            title="Total Clients"
+            value={stats.totalClients}
+            icon={Users}
+            color="text-blue-600"
+            pieColor={PIE_COLORS[0]}
+            description="Active client accounts"
+          />
+        )}
         <StatCard
           title="Active Devices"
           value={stats.activeDevices}
@@ -194,33 +229,63 @@ const Dashboard: React.FC = () => {
             <div className="space-y-3">
               {user?.role === 'admin' && (
                 <>
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-medium text-blue-900">Add New Client</h4>
-                    <p className="text-sm text-blue-700">Register a new client or walk-in customer</p>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                    <h4 className="font-medium text-green-900">Review Asset Requests</h4>
-                    <p className="text-sm text-green-700">Approve or reject pending asset requests</p>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start p-3 h-auto bg-blue-50 border-blue-200 hover:bg-blue-100"
+                    onClick={() => handleQuickAction('add-client')}
+                  >
+                    <div className="text-left">
+                      <h4 className="font-medium text-blue-900">Add New Client</h4>
+                      <p className="text-sm text-blue-700">Register a new client or walk-in customer</p>
+                    </div>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start p-3 h-auto bg-green-50 border-green-200 hover:bg-green-100"
+                    onClick={() => handleQuickAction('review-assets')}
+                  >
+                    <div className="text-left">
+                      <h4 className="font-medium text-green-900">Review Asset Requests</h4>
+                      <p className="text-sm text-green-700">Approve or reject pending asset requests</p>
+                    </div>
+                  </Button>
                 </>
               )}
               {user?.role === 'technician' && (
                 <>
-                  <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                    <h4 className="font-medium text-orange-900">View Assigned Tickets</h4>
-                    <p className="text-sm text-orange-700">Check your current service requests</p>
-                  </div>
-                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                    <h4 className="font-medium text-purple-900">Request Asset</h4>
-                    <p className="text-sm text-purple-700">Request company assets for your tasks</p>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start p-3 h-auto bg-orange-50 border-orange-200 hover:bg-orange-100"
+                    onClick={() => handleQuickAction('view-tickets')}
+                  >
+                    <div className="text-left">
+                      <h4 className="font-medium text-orange-900">View Assigned Tickets</h4>
+                      <p className="text-sm text-orange-700">Check your current service requests</p>
+                    </div>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start p-3 h-auto bg-purple-50 border-purple-200 hover:bg-purple-100"
+                    onClick={() => handleQuickAction('request-asset')}
+                  >
+                    <div className="text-left">
+                      <h4 className="font-medium text-purple-900">Request Asset</h4>
+                      <p className="text-sm text-purple-700">Request company assets for your tasks</p>
+                    </div>
+                  </Button>
                 </>
               )}
               {user?.role === 'client' && (
-                <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                  <h4 className="font-medium text-indigo-900">Submit Service Request</h4>
-                  <p className="text-sm text-indigo-700">Report an issue or request assistance</p>
-                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start p-3 h-auto bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+                  onClick={() => handleQuickAction('submit-request')}
+                >
+                  <div className="text-left">
+                    <h4 className="font-medium text-indigo-900">Submit Service Request</h4>
+                    <p className="text-sm text-indigo-700">Report an issue or request assistance</p>
+                  </div>
+                </Button>
               )}
             </div>
           </CardContent>
