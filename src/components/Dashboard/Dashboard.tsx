@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useDashboardStats } from '../../hooks/useDashboardStats';
 import { useNavigate } from 'react-router-dom';
 import { DashboardStats } from '../../types';
+import { useIsMobile } from '../../hooks/use-mobile';
 
 // Mock data for demonstration
 const mockStats: DashboardStats = {
@@ -42,6 +43,7 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { stats, isLoading } = useDashboardStats();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
@@ -57,36 +59,38 @@ const Dashboard: React.FC = () => {
     description?: string;
     pieColor: string;
   }> = ({ title, value, icon: Icon, color, description, pieColor }) => (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={`h-4 w-4 ${color}`} />
+        <CardTitle className="text-xs sm:text-sm font-medium truncate">{title}</CardTitle>
+        <Icon className={`h-4 w-4 ${color} flex-shrink-0`} />
       </CardHeader>
       <CardContent>
-        <div className="flex items-center space-x-3">
-          <div className="hidden xl:flex items-center justify-center" style={{ minWidth: 56, minHeight: 56 }}>
-            <PieChart width={56} height={56}>
-              <Pie
-                data={getPieData(title, value)}
-                dataKey="value"
-                innerRadius={20}
-                outerRadius={28}
-                stroke="none"
-                paddingAngle={2}
-                startAngle={90}
-                endAngle={-270}
-                cx={28}
-                cy={28}
-              >
-                <Cell key="cell-0" fill={pieColor} />
-                <Cell key="cell-1" fill="#e5e7eb" />
-              </Pie>
-            </PieChart>
-          </div>
-          <div>
-            <div className="text-2xl font-bold">{isLoading ? '...' : value}</div>
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          {!isMobile && (
+            <div className="hidden sm:flex items-center justify-center" style={{ minWidth: 56, minHeight: 56 }}>
+              <PieChart width={56} height={56}>
+                <Pie
+                  data={getPieData(title, value)}
+                  dataKey="value"
+                  innerRadius={20}
+                  outerRadius={28}
+                  stroke="none"
+                  paddingAngle={2}
+                  startAngle={90}
+                  endAngle={-270}
+                  cx={28}
+                  cy={28}
+                >
+                  <Cell key="cell-0" fill={pieColor} />
+                  <Cell key="cell-1" fill="#e5e7eb" />
+                </Pie>
+              </PieChart>
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="text-xl sm:text-2xl font-bold">{isLoading ? '...' : value}</div>
             {description && (
-              <p className="text-xs text-muted-foreground">{description}</p>
+              <p className="text-xs text-muted-foreground truncate">{description}</p>
             )}
           </div>
         </div>
@@ -124,14 +128,14 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">{getWelcomeMessage()}</h1>
-        <p className="text-gray-600">Here's what's happening with your IT management system today.</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{getWelcomeMessage()}</h1>
+        <p className="text-sm md:text-base text-gray-600 mt-1">Here's what's happening with your IT management system today.</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {user?.role === 'client' ? (
           <StatCard
             title="No of Locations"
@@ -194,23 +198,23 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest updates from your IT management system</CardDescription>
+            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <CardDescription className="text-sm">Latest updates from your IT management system</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{activity.action}</p>
-                    <p className="text-xs text-gray-500">{activity.client} • {activity.time}</p>
+                <div key={activity.id} className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1 min-w-0 mr-2">
+                    <p className="text-xs md:text-sm font-medium truncate">{activity.action}</p>
+                    <p className="text-xs text-gray-500 truncate">{activity.client} • {activity.time}</p>
                   </div>
                   <Badge 
                     variant={activity.status === 'resolved' ? 'default' : 'secondary'}
-                    className="text-xs"
+                    className="text-xs flex-shrink-0"
                   >
                     {activity.status}
                   </Badge>
@@ -222,31 +226,31 @@ const Dashboard: React.FC = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common tasks for your role</CardDescription>
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
+            <CardDescription className="text-sm">Common tasks for your role</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               {user?.role === 'admin' && (
                 <>
                   <Button 
                     variant="outline" 
-                    className="w-full justify-start p-3 h-auto bg-blue-50 border-blue-200 hover:bg-blue-100"
+                    className="w-full justify-start p-2 md:p-3 h-auto bg-blue-50 border-blue-200 hover:bg-blue-100"
                     onClick={() => handleQuickAction('add-client')}
                   >
                     <div className="text-left">
-                      <h4 className="font-medium text-blue-900">Add New Client</h4>
-                      <p className="text-sm text-blue-700">Register a new client or walk-in customer</p>
+                      <h4 className="font-medium text-blue-900 text-sm">Add New Client</h4>
+                      <p className="text-xs text-blue-700">Register a new client or walk-in customer</p>
                     </div>
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="w-full justify-start p-3 h-auto bg-green-50 border-green-200 hover:bg-green-100"
+                    className="w-full justify-start p-2 md:p-3 h-auto bg-green-50 border-green-200 hover:bg-green-100"
                     onClick={() => handleQuickAction('review-assets')}
                   >
                     <div className="text-left">
-                      <h4 className="font-medium text-green-900">Review Asset Requests</h4>
-                      <p className="text-sm text-green-700">Approve or reject pending asset requests</p>
+                      <h4 className="font-medium text-green-900 text-sm">Review Asset Requests</h4>
+                      <p className="text-xs text-green-700">Approve or reject pending asset requests</p>
                     </div>
                   </Button>
                 </>
@@ -255,22 +259,22 @@ const Dashboard: React.FC = () => {
                 <>
                   <Button 
                     variant="outline" 
-                    className="w-full justify-start p-3 h-auto bg-orange-50 border-orange-200 hover:bg-orange-100"
+                    className="w-full justify-start p-2 md:p-3 h-auto bg-orange-50 border-orange-200 hover:bg-orange-100"
                     onClick={() => handleQuickAction('view-tickets')}
                   >
                     <div className="text-left">
-                      <h4 className="font-medium text-orange-900">View Assigned Tickets</h4>
-                      <p className="text-sm text-orange-700">Check your current service requests</p>
+                      <h4 className="font-medium text-orange-900 text-sm">View Assigned Tickets</h4>
+                      <p className="text-xs text-orange-700">Check your current service requests</p>
                     </div>
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="w-full justify-start p-3 h-auto bg-purple-50 border-purple-200 hover:bg-purple-100"
+                    className="w-full justify-start p-2 md:p-3 h-auto bg-purple-50 border-purple-200 hover:bg-purple-100"
                     onClick={() => handleQuickAction('request-asset')}
                   >
                     <div className="text-left">
-                      <h4 className="font-medium text-purple-900">Request Asset</h4>
-                      <p className="text-sm text-purple-700">Request company assets for your tasks</p>
+                      <h4 className="font-medium text-purple-900 text-sm">Request Asset</h4>
+                      <p className="text-xs text-purple-700">Request company assets for your tasks</p>
                     </div>
                   </Button>
                 </>
@@ -278,12 +282,12 @@ const Dashboard: React.FC = () => {
               {user?.role === 'client' && (
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start p-3 h-auto bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+                  className="w-full justify-start p-2 md:p-3 h-auto bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
                   onClick={() => handleQuickAction('submit-request')}
                 >
                   <div className="text-left">
-                    <h4 className="font-medium text-indigo-900">Submit Service Request</h4>
-                    <p className="text-sm text-indigo-700">Report an issue or request assistance</p>
+                    <h4 className="font-medium text-indigo-900 text-sm">Submit Service Request</h4>
+                    <p className="text-xs text-indigo-700">Report an issue or request assistance</p>
                   </div>
                 </Button>
               )}

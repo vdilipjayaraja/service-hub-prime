@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Settings, LogOut, ArrowLeft } from 'lucide-react';
+import { User, Settings, LogOut, ArrowLeft, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,11 +16,17 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../../contexts/AuthContext';
 import NotificationDropdown from '../Notifications/NotificationDropdown';
 import ThemeToggle from '../Theme/ThemeToggle';
+import { useIsMobile } from '../../hooks/use-mobile';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -38,30 +44,39 @@ const Header: React.FC = () => {
   const showBackButton = location.pathname !== '/dashboard';
 
   return (
-    <header className="bg-background border-b border-border px-6 py-4 flex items-center justify-between">
-      <div className="flex items-center space-x-4">
-        {showBackButton && (
+    <header className="bg-background border-b border-border px-3 md:px-6 py-3 md:py-4 flex items-center justify-between">
+      <div className="flex items-center space-x-2 md:space-x-4 min-w-0">
+        {isMobile && (
+          <Button variant="ghost" size="sm" onClick={onMenuClick}>
+            <Menu className="h-4 w-4" />
+          </Button>
+        )}
+        {showBackButton && !isMobile && (
           <Button variant="ghost" size="sm" onClick={handleBackClick}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
         )}
-        <h1 className="text-2xl font-bold text-foreground">TechSolutions IT</h1>
-        <Badge variant="secondary" className="text-xs">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg md:text-2xl font-bold text-foreground truncate">
+            TechSolutions IT
+          </h1>
+        </div>
+        <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
           {user?.role?.toUpperCase()}
         </Badge>
       </div>
       
-      <div className="flex items-center space-x-4">
-        <NotificationDropdown />
-        <ThemeToggle />
+      <div className="flex items-center space-x-2 md:space-x-4">
+        {!isMobile && <NotificationDropdown />}
+        {!isMobile && <ThemeToggle />}
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.avatar} alt={user?.name} />
-                <AvatarFallback>
+                <AvatarFallback className="text-xs">
                   {user?.name?.split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
@@ -74,9 +89,23 @@ const Header: React.FC = () => {
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email}
                 </p>
+                <Badge variant="secondary" className="text-xs w-fit sm:hidden mt-1">
+                  {user?.role?.toUpperCase()}
+                </Badge>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {isMobile && (
+              <>
+                <DropdownMenuItem>
+                  <NotificationDropdown />
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <ThemeToggle />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={handleProfileClick}>
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
