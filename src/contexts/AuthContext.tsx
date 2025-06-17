@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { apiService } from '../lib/api';
@@ -29,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async () => {
     try {
-      const userData = await apiService.getCurrentUser();
+      const userData: any = await apiService.getCurrentUser();
       setUser({
         id: userData.id,
         name: userData.name,
@@ -71,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // Try FastAPI authentication first
-      const response = await apiService.login(email, password);
+      const response: any = await apiService.login(email, password);
       
       if (response.access_token) {
         apiService.setToken(response.access_token);
