@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { supabase } from '../lib/supabase';
+import { apiService } from '../lib/api';
 import dummyUsersData from '../data/dummyUsers.json';
 
 interface AuthContextType {
@@ -18,54 +18,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await fetchUserProfile(session.user.id);
-      } else {
-        setUser(null);
-        setIsLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    // Check if user is already logged in
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetchUserProfile();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        setIsLoading(false);
-        return;
-      }
-
-      if (data) {
-        setUser({
-          id: data.id,
-          name: data.name,
-          email: data.email,
-          role: data.role,
-          avatar: data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name}`
-        });
-      }
+      const userData = await apiService.getCurrentUser();
+      setUser({
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`
+      });
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      // Clear invalid token
+      apiService.clearToken();
       setIsLoading(false);
     }
   };
@@ -94,49 +70,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      // First try Supabase authentication
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (!error && data.user) {
-        await fetchUserProfile(data.user.id);
+      // Try FastAPI authentication first
+      const response = await apiService.login(email, password);
+      
+      if (response.access_token) {
+        apiService.setToken(response.access_token);
+        await fetchUserProfile();
         return true;
       }
-
-      // If Supabase auth fails, try dummy credentials
-      console.log('Supabase auth failed, trying dummy credentials...');
-      const dummyUser = loginWithDummyCredentials(email, password);
-      
-      if (dummyUser) {
-        setUser(dummyUser);
-        setIsLoading(false);
-        return true;
-      }
-      
-      console.error('Login failed for both Supabase and dummy credentials');
-      setIsLoading(false);
-      return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('FastAPI auth failed, trying dummy credentials...', error);
       
-      // Try dummy credentials as fallback
+      // Fallback to dummy credentials
       const dummyUser = loginWithDummyCredentials(email, password);
       
       if (dummyUser) {
         setUser(dummyUser);
+        // Set a dummy token for dummy users
+        apiService.setToken('dummy-token-' + dummyUser.id);
         setIsLoading(false);
         return true;
       }
-      
-      setIsLoading(false);
-      return false;
     }
+    
+    setIsLoading(false);
+    return false;
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
+    apiService.clearToken();
     setUser(null);
   };
 

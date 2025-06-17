@@ -1,7 +1,6 @@
 
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { apiService } from '../lib/api';
 import { ServiceRequest } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -12,48 +11,41 @@ export const useServiceRequests = () => {
   const { data: serviceRequests = [], isLoading, error } = useQuery({
     queryKey: ['serviceRequests'],
     queryFn: async () => {
-      let query = supabase
-        .from('service_requests')
-        .select(`
-          *,
-          clients(name),
-          technicians(name)
-        `)
-        .order('created_at', { ascending: false });
+      try {
+        const data = await apiService.getServiceRequests();
+        
+        // Filter based on user role (client-side filtering for now)
+        let filteredData = data;
+        if (user?.role === 'client') {
+          filteredData = data.filter((request: any) => request.submitted_by === user.id);
+        } else if (user?.role === 'technician') {
+          filteredData = data.filter((request: any) => 
+            request.assigned_to === user.id || request.assigned_to === null
+          );
+        }
 
-      // Filter based on user role
-      if (user?.role === 'client') {
-        query = query.eq('submitted_by', user.id);
-      } else if (user?.role === 'technician') {
-        // Show assigned requests and unassigned ones
-        query = query.or(`assigned_to.eq.${user.id},assigned_to.is.null`);
-      }
-
-      const { data, error } = await query;
-      
-      if (error) {
+        return filteredData.map((request: any) => ({
+          id: request.id,
+          ticketId: request.ticket_id,
+          clientId: request.client_id,
+          deviceId: request.device_id,
+          title: request.title,
+          description: request.description,
+          status: request.status,
+          priority: request.priority,
+          assignedTo: request.assigned_to,
+          submittedBy: request.submitted_by,
+          createdAt: request.created_at,
+          updatedAt: request.updated_at,
+          assignedAt: request.assigned_at,
+          resolutionNotes: request.resolution_notes,
+          clientName: request.client_name,
+          technicianName: request.technician_name
+        })) as ServiceRequest[];
+      } catch (error) {
         console.error('Error fetching service requests:', error);
-        throw error;
+        return [];
       }
-
-      return data?.map(request => ({
-        id: request.id,
-        ticketId: request.ticket_id,
-        clientId: request.client_id,
-        deviceId: request.device_id,
-        title: request.title,
-        description: request.description,
-        status: request.status,
-        priority: request.priority,
-        assignedTo: request.assigned_to,
-        submittedBy: request.submitted_by,
-        createdAt: request.created_at,
-        updatedAt: request.updated_at,
-        assignedAt: request.assigned_at,
-        resolutionNotes: request.resolution_notes,
-        clientName: request.clients?.name,
-        technicianName: request.technicians?.name
-      })) as ServiceRequest[] || [];
     },
     enabled: !!user
   });
@@ -67,21 +59,7 @@ export const useServiceRequests = () => {
       if (updates.resolutionNotes !== undefined) dbUpdates.resolution_notes = updates.resolutionNotes;
       if (updates.assignedAt) dbUpdates.assigned_at = updates.assignedAt;
       
-      dbUpdates.updated_at = new Date().toISOString();
-
-      const { data, error } = await supabase
-        .from('service_requests')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating service request:', error);
-        throw error;
-      }
-
-      return data;
+      return await apiService.updateServiceRequest(id, dbUpdates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['serviceRequests'] });
@@ -90,27 +68,18 @@ export const useServiceRequests = () => {
 
   const createServiceRequestMutation = useMutation({
     mutationFn: async (newRequest: Omit<ServiceRequest, 'id' | 'ticketId' | 'createdAt' | 'updatedAt'>) => {
-      const { data, error } = await supabase
-        .from('service_requests')
-        .insert({
-          client_id: newRequest.clientId,
-          device_id: newRequest.deviceId,
-          title: newRequest.title,
-          description: newRequest.description,
-          status: newRequest.status,
-          priority: newRequest.priority,
-          assigned_to: newRequest.assignedTo,
-          submitted_by: newRequest.submittedBy
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating service request:', error);
-        throw error;
-      }
-
-      return data;
+      const requestData = {
+        client_id: newRequest.clientId,
+        device_id: newRequest.deviceId,
+        title: newRequest.title,
+        description: newRequest.description,
+        status: newRequest.status,
+        priority: newRequest.priority,
+        assigned_to: newRequest.assignedTo,
+        submitted_by: newRequest.submittedBy
+      };
+      
+      return await apiService.createServiceRequest(requestData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['serviceRequests'] });
