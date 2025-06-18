@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { apiService } from '../lib/api';
 
 export interface Technician {
   id: string;
@@ -16,25 +16,21 @@ export const useTechnicians = () => {
   const { data: technicians = [], isLoading, error } = useQuery({
     queryKey: ['technicians'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('technicians')
-        .select('*')
-        .order('name');
-
-      if (error) {
+      try {
+        const data: any = await apiService.getTechnicians();
+        return data?.map((tech: any) => ({
+          id: tech.id,
+          name: tech.name,
+          email: tech.email,
+          status: tech.status,
+          specialization: tech.specialization || [],
+          activeRequests: tech.active_requests || 0,
+          avatar: tech.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${tech.name}`
+        })) as Technician[] || [];
+      } catch (error) {
         console.error('Error fetching technicians:', error);
-        throw error;
+        return [];
       }
-
-      return data?.map(tech => ({
-        id: tech.id,
-        name: tech.name,
-        email: tech.email,
-        status: tech.status,
-        specialization: tech.specialization || [],
-        activeRequests: tech.active_requests || 0,
-        avatar: tech.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${tech.name}`
-      })) as Technician[] || [];
     }
   });
 

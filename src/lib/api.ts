@@ -102,9 +102,35 @@ class ApiService {
     });
   }
 
+  // Technician endpoints
+  async getTechnicians() {
+    return this.request('/technicians');
+  }
+
+  async createTechnician(technician: any) {
+    return this.request('/technicians', {
+      method: 'POST',
+      body: JSON.stringify(technician),
+    });
+  }
+
   // Device endpoints
   async getDevices() {
     return this.request('/devices');
+  }
+
+  async createDevice(device: any) {
+    return this.request('/devices', {
+      method: 'POST',
+      body: JSON.stringify(device),
+    });
+  }
+
+  async updateDevice(id: string, updates: any) {
+    return this.request(`/devices/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
   }
 
   // Asset endpoints
@@ -112,9 +138,67 @@ class ApiService {
     return this.request('/assets');
   }
 
+  async createAsset(asset: any) {
+    return this.request('/assets', {
+      method: 'POST',
+      body: JSON.stringify(asset),
+    });
+  }
+
+  async updateAsset(id: string, updates: any) {
+    return this.request(`/assets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  // Asset Request endpoints
+  async getAssetRequests() {
+    return this.request('/asset-requests');
+  }
+
+  async createAssetRequest(request: any) {
+    return this.request('/asset-requests', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async updateAssetRequest(id: string, updates: any) {
+    return this.request(`/asset-requests/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
   // Notification endpoints
   async getNotifications() {
     return this.request('/notifications');
+  }
+
+  async createNotification(notification: any) {
+    return this.request('/notifications', {
+      method: 'POST',
+      body: JSON.stringify(notification),
+    });
+  }
+
+  // Admin Notification endpoints
+  async getAdminNotifications() {
+    return this.request('/admin/notifications');
+  }
+
+  async createAdminNotification(notification: any) {
+    return this.request('/admin/notifications', {
+      method: 'POST',
+      body: JSON.stringify(notification),
+    });
+  }
+
+  async acknowledgeAdminNotification(id: string) {
+    return this.request(`/admin/notifications/${id}/acknowledge`, {
+      method: 'POST',
+    });
   }
 }
 

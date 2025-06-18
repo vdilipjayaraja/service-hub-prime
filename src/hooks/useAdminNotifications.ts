@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiService } from '../lib/api';
 
 interface AdminNotification {
   id: string;
@@ -18,40 +19,35 @@ export const useAdminNotifications = () => {
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['adminNotifications'],
     queryFn: async () => {
-      // Mock data for demonstration
-      return [
-        {
-          id: '1',
-          type: 'device_action' as const,
-          action: 'edited device details',
-          technicianName: 'John Smith',
-          deviceName: 'KH03LAP',
-          timestamp: new Date().toISOString(),
-          acknowledged: false
-        },
-        {
-          id: '2',
-          type: 'asset_action' as const,
-          action: 'deployed asset',
-          technicianName: 'Jane Doe',
-          assetName: 'Conference Room Projector',
-          timestamp: new Date().toISOString(),
-          acknowledged: false
-        }
-      ] as AdminNotification[];
+      try {
+        const data: any = await apiService.getAdminNotifications();
+        return data?.map((notification: any) => ({
+          id: notification.id,
+          type: notification.type,
+          action: notification.action,
+          technicianName: notification.technician_name,
+          deviceName: notification.device_name,
+          assetName: notification.asset_name,
+          timestamp: notification.timestamp,
+          acknowledged: notification.acknowledged
+        })) as AdminNotification[] || [];
+      } catch (error) {
+        console.error('Error fetching admin notifications:', error);
+        return [];
+      }
     }
   });
 
   const addNotificationMutation = useMutation({
     mutationFn: async (notification: Omit<AdminNotification, 'id' | 'timestamp' | 'acknowledged'>) => {
-      // In a real app, this would make an API call
-      const newNotification: AdminNotification = {
-        ...notification,
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        acknowledged: false
+      const notificationData = {
+        type: notification.type,
+        action: notification.action,
+        technician_name: notification.technicianName,
+        device_name: notification.deviceName,
+        asset_name: notification.assetName
       };
-      return newNotification;
+      return await apiService.createAdminNotification(notificationData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminNotifications'] });
@@ -60,8 +56,7 @@ export const useAdminNotifications = () => {
 
   const acknowledgeNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      // In a real app, this would make an API call
-      return notificationId;
+      return await apiService.acknowledgeAdminNotification(notificationId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminNotifications'] });
