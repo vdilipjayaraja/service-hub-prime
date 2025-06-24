@@ -1,17 +1,10 @@
 
--- PostgreSQL Schema for IT Management System
--- Drop tables if they exist (in reverse order due to foreign keys)
-DROP TABLE IF EXISTS admin_notifications CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS asset_requests CASCADE;
-DROP TABLE IF EXISTS assets CASCADE;
-DROP TABLE IF EXISTS service_requests CASCADE;
-DROP TABLE IF EXISTS devices CASCADE;
-DROP TABLE IF EXISTS technicians CASCADE;
-DROP TABLE IF EXISTS clients CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- IT Management System Database Schema
 
--- Create ENUM types
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ENUM Types
 CREATE TYPE user_role AS ENUM ('admin', 'technician', 'client');
 CREATE TYPE client_type AS ENUM ('managed_site', 'individual', 'walk_in');
 CREATE TYPE device_type AS ENUM ('PC', 'Server', 'Network', 'CCTV', 'Printer', 'Other');
@@ -27,7 +20,7 @@ CREATE TYPE notification_type AS ENUM ('device_action', 'asset_action');
 
 -- Users table
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -39,7 +32,7 @@ CREATE TABLE users (
 
 -- Clients table
 CREATE TABLE clients (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     contact_person VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -52,7 +45,7 @@ CREATE TABLE clients (
 
 -- Technicians table
 CREATE TABLE technicians (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -66,7 +59,7 @@ CREATE TABLE technicians (
 
 -- Devices table
 CREATE TABLE devices (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
     device_code VARCHAR(100) UNIQUE NOT NULL,
     device_type device_type NOT NULL,
@@ -84,7 +77,7 @@ CREATE TABLE devices (
 
 -- Service Requests table
 CREATE TABLE service_requests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id VARCHAR(50) UNIQUE NOT NULL,
     client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
     device_id UUID REFERENCES devices(id) ON DELETE SET NULL,
@@ -102,7 +95,7 @@ CREATE TABLE service_requests (
 
 -- Assets table
 CREATE TABLE assets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     asset_tag VARCHAR(100) UNIQUE NOT NULL,
     asset_type asset_type NOT NULL,
     description TEXT NOT NULL,
@@ -116,7 +109,7 @@ CREATE TABLE assets (
 
 -- Asset Requests table
 CREATE TABLE asset_requests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     asset_id UUID REFERENCES assets(id) ON DELETE CASCADE,
     requested_by UUID REFERENCES technicians(id) ON DELETE CASCADE,
     request_type asset_request_type NOT NULL,
@@ -128,7 +121,7 @@ CREATE TABLE asset_requests (
 
 -- Notifications table
 CREATE TABLE notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
@@ -138,7 +131,7 @@ CREATE TABLE notifications (
 
 -- Admin Notifications table
 CREATE TABLE admin_notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     type notification_type NOT NULL,
     action VARCHAR(255) NOT NULL,
     technician_name VARCHAR(255) NOT NULL,
@@ -148,24 +141,18 @@ CREATE TABLE admin_notifications (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes for better performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_service_requests_client_id ON service_requests(client_id);
-CREATE INDEX idx_service_requests_assigned_to ON service_requests(assigned_to);
-CREATE INDEX idx_service_requests_status ON service_requests(status);
+-- Indexes for better performance
 CREATE INDEX idx_devices_client_id ON devices(client_id);
-CREATE INDEX idx_assets_assigned_to ON assets(assigned_to);
-CREATE INDEX idx_asset_requests_requested_by ON asset_requests(requested_by);
+CREATE INDEX idx_devices_status ON devices(status);
+CREATE INDEX idx_service_requests_client_id ON service_requests(client_id);
+CREATE INDEX idx_service_requests_status ON service_requests(status);
+CREATE INDEX idx_service_requests_assigned_to ON service_requests(assigned_to);
+CREATE INDEX idx_assets_status ON assets(status);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 
--- Insert default admin user (password: admin123)
-INSERT INTO users (name, email, password_hash, role) VALUES 
-('System Admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewCkSb2.9i3qK8p2', 'admin');
+-- Insert sample data
+INSERT INTO users (id, name, email, password_hash, role) VALUES 
+(uuid_generate_v4(), 'Admin User', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj3QOY6lF5yO', 'admin');
 
--- Insert sample technician
-INSERT INTO users (name, email, password_hash, role) VALUES 
-('John Technician', 'tech@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewCkSb2.9i3qK8p2', 'technician');
-
--- Insert sample client
-INSERT INTO users (name, email, password_hash, role) VALUES 
-('Client User', 'client@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewCkSb2.9i3qK8p2', 'client');
+INSERT INTO clients (id, name, contact_person, email, phone, address, type) VALUES 
+(uuid_generate_v4(), 'Sample Company', 'John Doe', 'contact@samplecompany.com', '+1234567890', '123 Business Street, City, State', 'managed_site');
