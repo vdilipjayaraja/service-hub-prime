@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS service_requests CASCADE;
 DROP TABLE IF EXISTS devices CASCADE;
 DROP TABLE IF EXISTS technicians CASCADE;
 DROP TABLE IF EXISTS clients CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";DROP TABLE IF EXISTS users CASCADE;
 
 -- Create ENUM types
 CREATE TYPE user_role AS ENUM ('admin', 'technician', 'client');

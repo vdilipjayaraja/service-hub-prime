@@ -1,17 +1,17 @@
-
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+from backend import auth
 from typing import Optional, List
 import os
 from dotenv import load_dotenv
 
-from database import get_db, engine
-import models
-import schemas
-from auth import verify_password, get_password_hash, create_access_token, verify_token
+from backend.database import get_db, engine
+from backend import models
+from backend import schemas
+from backend.auth import verify_password, get_password_hash, create_access_token, verify_token
 
 load_dotenv()
 
@@ -23,7 +23,7 @@ app = FastAPI(title="IT Management System API", version="1.0.0")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["*"],  # Allow all origins for development; restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -385,6 +385,10 @@ async def acknowledge_admin_notification(notification_id: str, db: Session = Dep
     notification.acknowledged = True
     db.commit()
     return {"message": "Notification acknowledged"}
+
+@app.get("/")
+def read_root():
+    return {"message": "API is running"}
 
 if __name__ == "__main__":
     import uvicorn

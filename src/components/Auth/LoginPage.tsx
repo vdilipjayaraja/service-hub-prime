@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,18 +13,31 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { user, login, isLoading } = useAuth();
-
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  const navigate = useNavigate();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const formData = new URLSearchParams();
+    formData.append('username', email); // <-- must be 'username'
+    formData.append('password', password);
+
+    const response = await fetch("http://localhost:8000/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: formData.toString()
+    });
     
-    const success = await login(email, password);
-    if (!success) {
-      setError('Invalid email or password');
+    if (response.ok) {
+      const data = await response.json();
+      const token = data.access_token;
+      localStorage.setItem("token", token);
+      navigate("/dashboard", { replace: true });
+    } else {
+      setError("Invalid email or password");
     }
   };
 
@@ -85,15 +97,6 @@ const LoginPage: React.FC = () => {
               )}
             </Button>
           </form>
-          
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Demo Accounts:</p>
-            <div className="text-xs space-y-1">
-              <p><strong>Admin:</strong> admin@techsolutions.com / password</p>
-              <p><strong>Technician:</strong> john@techsolutions.com / password</p>
-              <p><strong>Client:</strong> client@example.com / password</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
