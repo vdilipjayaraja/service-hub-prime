@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { apiService } from '../lib/api';
+import { DashboardService } from '../services/DashboardService';
 import { DashboardStats } from '../types';
 
 export const useDashboardStats = () => {
@@ -8,18 +8,10 @@ export const useDashboardStats = () => {
     queryKey: ['dashboardStats'],
     queryFn: async () => {
       try {
-        const data: any = await apiService.getDashboardStats();
-        return {
-          totalClients: data.total_clients || 0,
-          activeDevices: data.active_devices || 0,
-          openTickets: data.open_tickets || 0,
-          availableAssets: data.available_assets || 0,
-          pendingRequests: data.pending_requests || 0,
-          resolvedToday: data.resolved_today || 0
-        } as DashboardStats;
+        return await DashboardService.getStats();
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
-        // Return default stats if API call fails
+        // Return default stats if service call fails
         return {
           totalClients: 0,
           activeDevices: 0,
