@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,106 +10,65 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Monitor, Laptop, Smartphone, Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, Server, Printer } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DeviceService } from '../../services/DeviceService';
-import { ClientService } from '../../services/ClientService';
-import { Device } from '../../models/Device';
-import { Client } from '../../models/Client';
-import { toast } from '@/hooks/use-toast';
+import { Monitor, Laptop, Smartphone, Plus, Search, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+
+interface Device {
+  id: string;
+  name: string;
+  type: 'Desktop' | 'Laptop' | 'Mobile' | 'Server' | 'Printer';
+  status: 'Active' | 'Inactive' | 'Maintenance' | 'Retired';
+  location: string;
+  lastSeen: string;
+  serialNumber: string;
+  notes: string;
+}
 
 const DeviceManagement: React.FC = () => {
+  const [devices, setDevices] = useState<Device[]>([
+    {
+      id: '1',
+      name: 'KH01DES',
+      type: 'Desktop',
+      status: 'Active',
+      location: 'Office A-101',
+      lastSeen: '2024-01-15 09:30',
+      serialNumber: 'DT001234',
+      notes: 'Primary workstation'
+    },
+    {
+      id: '2',
+      name: 'RM01LAP',
+      type: 'Laptop',
+      status: 'Active',
+      location: 'Remote',
+      lastSeen: '2024-01-15 14:22',
+      serialNumber: 'LT002345',
+      notes: 'Mobile worker laptop'
+    },
+    {
+      id: '3',
+      name: 'SR01SRV',
+      type: 'Server',
+      status: 'Maintenance',
+      location: 'Server Room',
+      lastSeen: '2024-01-14 23:15',
+      serialNumber: 'SV001456',
+      notes: 'Scheduled maintenance'
+    }
+  ]);
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set());
-  const [editDevice, setEditDevice] = useState<Device | null>(null);
   const [newDevice, setNewDevice] = useState({
-    device_type: '',
-    manufacturer: '',
-    model: '',
-    serial_number: '',
+    type: '',
+    serialNumber: '',
     location: '',
-    notes: '',
-    client_id: ''
+    notes: ''
   });
-
-  const queryClient = useQueryClient();
-
-  // Fetch devices using service layer
-  const { data: devices = [], isLoading, error } = useQuery({
-    queryKey: ['devices'],
-    queryFn: DeviceService.getAllDevices
-  });
-
-  // Fetch clients using service layer
-  const { data: clients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: ClientService.getAllClients
-  });
-
-  // Create device mutation
-  const createDeviceMutation = useMutation({
-    mutationFn: async (deviceData: any) => {
-      const deviceCode = generateDeviceCode(deviceData.location, deviceData.device_type);
-      return DeviceService.createDevice({
-        ...deviceData,
-        device_code: deviceCode,
-        status: 'active'
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      setIsAddDialogOpen(false);
-      setNewDevice({
-        device_type: '',
-        manufacturer: '',
-        model: '',
-        serial_number: '',
-        location: '',
-        notes: '',
-        client_id: ''
-      });
-      toast({
-        title: "Success",
-        description: "Device added successfully",
-      });
-    },
-    onError: (error) => {
-      console.error('Error creating device:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add device",
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Update device mutation
-  const updateDeviceMutation = useMutation({
-    mutationFn: async ({ id, ...updates }: any) => {
-      return DeviceService.updateDevice(id, updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      setIsEditDialogOpen(false);
-      setEditDevice(null);
-      toast({
-        title: "Success",
-        description: "Device updated successfully",
-      });
-    },
-    onError: (error) => {
-      console.error('Error updating device:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update device",
-        variant: "destructive",
-      });
-    }
-  });
+  const [editDevice, setEditDevice] = useState<Device | null>(null);
 
   const locationCodes: { [key: string]: string } = {
     'Office A-101': 'KH',
@@ -118,58 +78,55 @@ const DeviceManagement: React.FC = () => {
   };
 
   const deviceTypeCodes: { [key: string]: string } = {
-    'PC': 'DES',
+    'Desktop': 'DES',
+    'Laptop': 'LAP',
+    'Mobile': 'MOB',
     'Server': 'SRV',
-    'Network': 'NET',
-    'CCTV': 'CTV',
-    'Printer': 'PRT',
-    'Other': 'OTH'
+    'Printer': 'PRT'
   };
 
   const generateDeviceCode = (location: string, type: string) => {
     const locationCode = locationCodes[location] || 'XX';
     const typeCode = deviceTypeCodes[type] || 'XXX';
-    const existingDevices = devices.filter((d: Device) => d.location === location && d.device_type === type);
+    const existingDevices = devices.filter(d => d.location === location && d.type === type);
     const sequence = String(existingDevices.length + 1).padStart(2, '0');
     return `${locationCode}${sequence}${typeCode}`;
   };
 
   const getStatusBadgeColor = (status: Device['status']) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'in_repair': return 'bg-yellow-100 text-yellow-800';
-      case 'maintenance': return 'bg-blue-100 text-blue-800';
-      case 'retired': return 'bg-red-100 text-red-800';
+      case 'Active': return 'bg-green-100 text-green-800';
+      case 'Inactive': return 'bg-gray-100 text-gray-800';
+      case 'Maintenance': return 'bg-yellow-100 text-yellow-800';
+      case 'Retired': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getDeviceIcon = (type: Device['device_type']) => {
+  const getDeviceIcon = (type: Device['type']) => {
     switch (type) {
-      case 'PC': return <Monitor className="w-4 h-4" />;
-      case 'Server': return <Server className="w-4 h-4" />;
-      case 'Network': return <Monitor className="w-4 h-4" />;
-      case 'CCTV': return <Smartphone className="w-4 h-4" />;
-      case 'Printer': return <Printer className="w-4 h-4" />;
-      case 'Other': return <Monitor className="w-4 h-4" />;
+      case 'Desktop': return <Monitor className="w-4 h-4" />;
+      case 'Laptop': return <Laptop className="w-4 h-4" />;
+      case 'Mobile': return <Smartphone className="w-4 h-4" />;
+      case 'Server': return <Monitor className="w-4 h-4" />;
+      case 'Printer': return <Monitor className="w-4 h-4" />;
       default: return <Monitor className="w-4 h-4" />;
     }
   };
 
-  const filteredDevices = devices.filter((device: Device) =>
-    device.device_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (device.location && device.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (device.serial_number && device.serial_number.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredDevices = devices.filter(device =>
+    device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    device.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    device.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const devicesByLocation = filteredDevices.reduce((acc: Record<string, Device[]>, device: Device) => {
-    const location = device.location || 'Unknown Location';
-    if (!acc[location]) {
-      acc[location] = [];
+  const devicesByLocation = filteredDevices.reduce((acc, device) => {
+    if (!acc[device.location]) {
+      acc[device.location] = [];
     }
-    acc[location].push(device);
+    acc[device.location].push(device);
     return acc;
-  }, {});
+  }, {} as Record<string, Device[]>);
 
   const toggleLocation = (location: string) => {
     const newExpanded = new Set(expandedLocations);
@@ -182,21 +139,35 @@ const DeviceManagement: React.FC = () => {
   };
 
   const handleAddDevice = () => {
-    if (newDevice.device_type && newDevice.location && newDevice.client_id) {
-      createDeviceMutation.mutate(newDevice);
-    } else {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+    if (newDevice.type && newDevice.location) {
+      const deviceCode = generateDeviceCode(newDevice.location, newDevice.type);
+      const device: Device = {
+        id: Date.now().toString(),
+        name: deviceCode,
+        type: newDevice.type as Device['type'],
+        status: 'Active',
+        location: newDevice.location,
+        lastSeen: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        serialNumber: newDevice.serialNumber,
+        notes: newDevice.notes
+      };
+      setDevices([...devices, device]);
+      setNewDevice({ type: '', serialNumber: '', location: '', notes: '' });
+      setIsAddDialogOpen(false);
     }
   };
 
   const handleEditDevice = () => {
     if (editDevice) {
-      const { id, created_at, updated_at, ...updates } = editDevice;
-      updateDeviceMutation.mutate({ id, ...updates });
+      setDevices(devices.map(d => d.id === editDevice.id ? editDevice : d));
+      setIsEditDialogOpen(false);
+      setEditDevice(null);
+    }
+  };
+
+  const handleDeleteDevice = (deviceId: string) => {
+    if (confirm('Are you sure you want to delete this device?')) {
+      setDevices(devices.filter(d => d.id !== deviceId));
     }
   };
 
@@ -204,22 +175,6 @@ const DeviceManagement: React.FC = () => {
     setEditDevice({ ...device });
     setIsEditDialogOpen(true);
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading devices...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-red-600">Error loading devices. Please try again.</div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -238,53 +193,19 @@ const DeviceManagement: React.FC = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="client-select">Client</Label>
-                <Select value={newDevice.client_id} onValueChange={(value) => setNewDevice({ ...newDevice, client_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client: Client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="device-type">Device Type</Label>
-                <Select value={newDevice.device_type} onValueChange={(value) => setNewDevice({ ...newDevice, device_type: value })}>
+                <Select value={newDevice.type} onValueChange={(value) => setNewDevice({ ...newDevice, type: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select device type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PC">PC</SelectItem>
+                    <SelectItem value="Desktop">Desktop</SelectItem>
+                    <SelectItem value="Laptop">Laptop</SelectItem>
+                    <SelectItem value="Mobile">Mobile</SelectItem>
                     <SelectItem value="Server">Server</SelectItem>
-                    <SelectItem value="Network">Network</SelectItem>
-                    <SelectItem value="CCTV">CCTV</SelectItem>
                     <SelectItem value="Printer">Printer</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="manufacturer">Manufacturer</Label>
-                <Input 
-                  id="manufacturer" 
-                  placeholder="Device manufacturer" 
-                  value={newDevice.manufacturer}
-                  onChange={(e) => setNewDevice({ ...newDevice, manufacturer: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="model">Model</Label>
-                <Input 
-                  id="model" 
-                  placeholder="Device model" 
-                  value={newDevice.model}
-                  onChange={(e) => setNewDevice({ ...newDevice, model: e.target.value })}
-                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
@@ -305,8 +226,8 @@ const DeviceManagement: React.FC = () => {
                 <Input 
                   id="serial-number" 
                   placeholder="Device serial number" 
-                  value={newDevice.serial_number}
-                  onChange={(e) => setNewDevice({ ...newDevice, serial_number: e.target.value })}
+                  value={newDevice.serialNumber}
+                  onChange={(e) => setNewDevice({ ...newDevice, serialNumber: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -322,8 +243,8 @@ const DeviceManagement: React.FC = () => {
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleAddDevice} disabled={createDeviceMutation.isPending}>
-                  {createDeviceMutation.isPending ? 'Adding...' : 'Add Device'}
+                <Button onClick={handleAddDevice}>
+                  Add Device
                 </Button>
               </div>
             </div>
@@ -340,26 +261,25 @@ const DeviceManagement: React.FC = () => {
           {editDevice && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-device-code">Device Code</Label>
+                <Label htmlFor="edit-device-name">Device Name</Label>
                 <Input 
-                  id="edit-device-code" 
-                  value={editDevice.device_code}
-                  onChange={(e) => setEditDevice({ ...editDevice, device_code: e.target.value })}
+                  id="edit-device-name" 
+                  value={editDevice.name}
+                  onChange={(e) => setEditDevice({ ...editDevice, name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-device-type">Device Type</Label>
-                <Select value={editDevice.device_type} onValueChange={(value) => setEditDevice({ ...editDevice, device_type: value as Device['device_type'] })}>
+                <Select value={editDevice.type} onValueChange={(value) => setEditDevice({ ...editDevice, type: value as Device['type'] })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PC">PC</SelectItem>
+                    <SelectItem value="Desktop">Desktop</SelectItem>
+                    <SelectItem value="Laptop">Laptop</SelectItem>
+                    <SelectItem value="Mobile">Mobile</SelectItem>
                     <SelectItem value="Server">Server</SelectItem>
-                    <SelectItem value="Network">Network</SelectItem>
-                    <SelectItem value="CCTV">CCTV</SelectItem>
                     <SelectItem value="Printer">Printer</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -370,32 +290,16 @@ const DeviceManagement: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="in_repair">In Repair</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="retired">Retired</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                    <SelectItem value="Retired">Retired</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-manufacturer">Manufacturer</Label>
-                <Input 
-                  id="edit-manufacturer" 
-                  value={editDevice.manufacturer || ''}
-                  onChange={(e) => setEditDevice({ ...editDevice, manufacturer: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-model">Model</Label>
-                <Input 
-                  id="edit-model" 
-                  value={editDevice.model || ''}
-                  onChange={(e) => setEditDevice({ ...editDevice, model: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="edit-location">Location</Label>
-                <Select value={editDevice.location || ''} onValueChange={(value) => setEditDevice({ ...editDevice, location: value })}>
+                <Select value={editDevice.location} onValueChange={(value) => setEditDevice({ ...editDevice, location: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -411,15 +315,15 @@ const DeviceManagement: React.FC = () => {
                 <Label htmlFor="edit-serial-number">Serial Number</Label>
                 <Input 
                   id="edit-serial-number" 
-                  value={editDevice.serial_number || ''}
-                  onChange={(e) => setEditDevice({ ...editDevice, serial_number: e.target.value })}
+                  value={editDevice.serialNumber}
+                  onChange={(e) => setEditDevice({ ...editDevice, serialNumber: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-notes">Notes</Label>
                 <Textarea 
                   id="edit-notes" 
-                  value={editDevice.notes || ''}
+                  value={editDevice.notes}
                   onChange={(e) => setEditDevice({ ...editDevice, notes: e.target.value })}
                 />
               </div>
@@ -427,8 +331,8 @@ const DeviceManagement: React.FC = () => {
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleEditDevice} disabled={updateDeviceMutation.isPending}>
-                  {updateDeviceMutation.isPending ? 'Saving...' : 'Save Changes'}
+                <Button onClick={handleEditDevice}>
+                  Save Changes
                 </Button>
               </div>
             </div>
@@ -452,74 +356,71 @@ const DeviceManagement: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {Object.keys(devicesByLocation).length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No devices found</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Device</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Manufacturer</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Object.entries(devicesByLocation).map(([location, locationDevices]) => (
-                  <React.Fragment key={location}>
-                    <TableRow className="bg-gray-50">
-                      <TableCell colSpan={6}>
-                        <Collapsible>
-                          <CollapsibleTrigger 
-                            className="flex items-center space-x-2 w-full text-left"
-                            onClick={() => toggleLocation(location)}
-                          >
-                            {expandedLocations.has(location) ? 
-                              <ChevronDown className="w-4 h-4" /> : 
-                              <ChevronRight className="w-4 h-4" />
-                            }
-                            <span className="font-medium">{location} ({locationDevices.length} devices)</span>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            {expandedLocations.has(location) && locationDevices.map((device: Device) => (
-                              <div key={device.id} className="ml-6 py-2 border-b last:border-b-0">
-                                <div className="grid grid-cols-6 gap-4 items-center">
-                                  <div className="flex items-center space-x-2">
-                                    {getDeviceIcon(device.device_type)}
-                                    <div>
-                                      <p className="font-medium">{device.device_code}</p>
-                                      <p className="text-sm text-gray-500">{device.serial_number}</p>
-                                    </div>
-                                  </div>
-                                  <div>{device.device_type}</div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Device</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Last Seen</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Object.entries(devicesByLocation).map(([location, locationDevices]) => (
+                <React.Fragment key={location}>
+                  <TableRow className="bg-gray-50">
+                    <TableCell colSpan={6}>
+                      <Collapsible>
+                        <CollapsibleTrigger 
+                          className="flex items-center space-x-2 w-full text-left"
+                          onClick={() => toggleLocation(location)}
+                        >
+                          {expandedLocations.has(location) ? 
+                            <ChevronDown className="w-4 h-4" /> : 
+                            <ChevronRight className="w-4 h-4" />
+                          }
+                          <span className="font-medium">{location} ({locationDevices.length} devices)</span>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          {expandedLocations.has(location) && locationDevices.map((device) => (
+                            <div key={device.id} className="ml-6 py-2 border-b last:border-b-0">
+                              <div className="grid grid-cols-6 gap-4 items-center">
+                                <div className="flex items-center space-x-2">
+                                  {getDeviceIcon(device.type)}
                                   <div>
-                                    <Badge className={getStatusBadgeColor(device.status)}>
-                                      {device.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                    </Badge>
-                                  </div>
-                                  <div>{device.location}</div>
-                                  <div>{device.manufacturer || 'N/A'}</div>
-                                  <div className="flex items-center space-x-2">
-                                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(device)}>
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
+                                    <p className="font-medium">{device.name}</p>
+                                    <p className="text-sm text-gray-500">{device.serialNumber}</p>
                                   </div>
                                 </div>
+                                <div>{device.type}</div>
+                                <div>
+                                  <Badge className={getStatusBadgeColor(device.status)}>
+                                    {device.status}
+                                  </Badge>
+                                </div>
+                                <div>{device.location}</div>
+                                <div>{device.lastSeen}</div>
+                                <div className="flex items-center space-x-2">
+                                  <Button variant="ghost" size="sm" onClick={() => openEditDialog(device)}>
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDeleteDevice(device.id)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
-                            ))}
-                          </CollapsibleContent>
-                        </Collapsible>
-                      </TableCell>
-                    </TableRow>
-                  </React.Fragment>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                            </div>
+                          ))}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </TableCell>
+                  </TableRow>
+                </React.Fragment>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
