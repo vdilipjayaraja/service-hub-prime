@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,19 +8,9 @@ import { PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDashboardStats } from '../../hooks/useDashboardStats';
 import { useNavigate } from 'react-router-dom';
-import { DashboardStats } from '../../types';
+import { DashboardStats } from '../../models/DashboardStats';
 import { useIsMobile } from '../../hooks/use-mobile';
 import RecentActivityCard from './RecentActivityCard';
-
-// Mock data for demonstration
-const mockStats: DashboardStats = {
-  totalClients: 45,
-  activeDevices: 128,
-  openTickets: 12,
-  availableAssets: 23,
-  pendingRequests: 5,
-  resolvedToday: 8
-};
 
 const PIE_COLORS = [
   "#3b82f6", // blue
@@ -120,13 +111,6 @@ const Dashboard: React.FC = () => {
         break;
     }
   };
-
-  const recentActivity = [
-    { id: 1, action: 'New service request', client: 'ABC Corp', time: '2 minutes ago', status: 'open' },
-    { id: 2, action: 'Device maintenance completed', client: 'XYZ Ltd', time: '15 minutes ago', status: 'resolved' },
-    { id: 3, action: 'Asset assigned to technician', client: 'Internal', time: '1 hour ago', status: 'assigned' },
-    { id: 4, action: 'Client profile updated', client: 'Tech Startup', time: '2 hours ago', status: 'updated' },
-  ];
 
   return (
     <div className="space-y-4 md:space-y-6">

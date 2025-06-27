@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,25 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Monitor, Laptop, Smartphone, Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, Server, Printer } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiService } from '@/lib/api';
-import { toast } from '@/components/ui/use-toast';
-
-interface Device {
-  id: string;
-  client_id: string;
-  device_code: string;
-  device_type: 'PC' | 'Server' | 'Network' | 'CCTV' | 'Printer' | 'Other';
-  manufacturer?: string;
-  model?: string;
-  serial_number?: string;
-  purchase_date?: string;
-  warranty_expiry?: string;
-  status: 'active' | 'in_repair' | 'retired' | 'maintenance';
-  location?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+import { DeviceService } from '../../services/DeviceService';
+import { ClientService } from '../../services/ClientService';
+import { Device } from '../../models/Device';
+import { Client } from '../../models/Client';
+import { toast } from '@/hooks/use-toast';
 
 const DeviceManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,39 +35,23 @@ const DeviceManagement: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Fetch devices
+  // Fetch devices using service layer
   const { data: devices = [], isLoading, error } = useQuery({
     queryKey: ['devices'],
-    queryFn: async () => {
-      try {
-        const response = await apiService.getDevices();
-        return response;
-      } catch (error) {
-        console.error('Error fetching devices:', error);
-        throw error;
-      }
-    }
+    queryFn: DeviceService.getAllDevices
   });
 
-  // Fetch clients for the dropdown
+  // Fetch clients using service layer
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: async () => {
-      try {
-        const response = await apiService.getClients();
-        return response;
-      } catch (error) {
-        console.error('Error fetching clients:', error);
-        return [];
-      }
-    }
+    queryFn: ClientService.getAllClients
   });
 
   // Create device mutation
   const createDeviceMutation = useMutation({
     mutationFn: async (deviceData: any) => {
       const deviceCode = generateDeviceCode(deviceData.location, deviceData.device_type);
-      return apiService.createDevice({
+      return DeviceService.createDevice({
         ...deviceData,
         device_code: deviceCode,
         status: 'active'
@@ -119,7 +88,7 @@ const DeviceManagement: React.FC = () => {
   // Update device mutation
   const updateDeviceMutation = useMutation({
     mutationFn: async ({ id, ...updates }: any) => {
-      return apiService.updateDevice(id, updates);
+      return DeviceService.updateDevice(id, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] });
@@ -275,7 +244,7 @@ const DeviceManagement: React.FC = () => {
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client: any) => (
+                    {clients.map((client: Client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
                       </SelectItem>
