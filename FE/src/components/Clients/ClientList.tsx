@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,53 +8,41 @@ import { Client } from '../../types';
 import { useToast } from '@/components/ui/use-toast';
 import ClientForm from './ClientForm';
 
-// Mock data for demonstration
-const mockClients: Client[] = [
-  {
-    id: '1',
-    name: 'ABC Corporation',
-    contactPerson: 'John Smith',
-    email: 'john@abccorp.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Business Ave, Suite 100, City, State 12345',
-    type: 'managed_site',
-    createdAt: '2024-01-15',
-    deviceCount: 25,
-    activeRequests: 2
-  },
-  {
-    id: '2',
-    name: 'Jane Doe',
-    contactPerson: 'Jane Doe',
-    email: 'jane@example.com',
-    phone: '+1 (555) 987-6543',
-    address: '456 Home St, City, State 12345',
-    type: 'individual',
-    createdAt: '2024-02-20',
-    deviceCount: 3,
-    activeRequests: 0
-  },
-  {
-    id: '3',
-    name: 'Walk-in Customer #001',
-    contactPerson: 'Michael Johnson',
-    email: 'mjohnson@email.com',
-    phone: '+1 (555) 456-7890',
-    address: 'N/A',
-    type: 'walk_in',
-    createdAt: '2024-06-14',
-    deviceCount: 1,
-    activeRequests: 1
-  }
-];
+const API_BASE = "http://127.0.0.1:8002";
 
 const ClientList: React.FC = () => {
   const { toast } = useToast();
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | undefined>();
+  const [loading, setLoading] = useState(true);
+
+  // Move fetchClients outside useEffect
+  const fetchClients = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/clients/`);
+      if (!res.ok) throw new Error('Failed to fetch clients');
+      const data = await res.json();
+      setClients(data);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to fetch clients",
+        variant: "destructive"
+      });
+      setClients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+    // eslint-disable-next-line
+  }, [toast]);
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,32 +62,52 @@ const ClientList: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDeleteClient = (clientId: string) => {
-    setClients(prev => prev.filter(c => c.id !== clientId));
-    toast({
-      title: "Success",
-      description: "Client deleted successfully"
-    });
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/clients/${clientId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete client');
+      setClients(prev => prev.filter(c => c.id !== clientId));
+      toast({
+        title: "Success",
+        description: "Client deleted successfully"
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to delete client",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleSaveClient = (clientData: Omit<Client, 'id'>) => {
-    if (editingClient) {
-      // Update existing client
-      setClients(prev => prev.map(c => 
-        c.id === editingClient.id 
-          ? { ...clientData, id: editingClient.id }
-          : c
-      ));
-    } else {
-      // Add new client
-      const newClient: Client = {
-        ...clientData,
-        id: Date.now().toString()
-      };
-      setClients(prev => [...prev, newClient]);
+  const handleSaveClient = async (clientData: Omit<Client, 'id'>) => {
+    try {
+      await fetch('http://127.0.0.1:8002/clients/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: clientData.name,
+          contact_person: clientData.contactPerson,
+          email: clientData.email,
+          phone: clientData.phone,
+          address: clientData.address,
+          type: clientData.type
+        })
+      });
+      setShowForm(false);
+      setEditingClient(undefined);
+      toast({
+        title: "Success",
+        description: "Client saved successfully"
+      });
+      fetchClients(); // <-- Refresh the list after save
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to save client",
+        variant: "destructive"
+      });
     }
-    setShowForm(false);
-    setEditingClient(undefined);
   };
 
   const getTypeColor = (type: Client['type']) => {
@@ -132,6 +139,10 @@ const ClientList: React.FC = () => {
         }}
       />
     );
+  }
+
+  if (loading) {
+    return <div>Loading clients...</div>;
   }
 
   return (

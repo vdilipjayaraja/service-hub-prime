@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +29,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
     type: client?.type || 'individual' as Client['type']
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.contactPerson || !formData.email) {
       toast({
@@ -50,17 +49,65 @@ const ClientForm: React.FC<ClientFormProps> = ({ client, onSave, onCancel }) => 
       return;
     }
 
-    onSave({
-      ...formData,
-      createdAt: client?.createdAt || new Date().toISOString(),
-      deviceCount: client?.deviceCount || 0,
-      activeRequests: client?.activeRequests || 0
-    });
+    try {
+      let userId = client?.userId;
+      // 1. Create user if adding new client
+      if (!client) {
+        const userRes = await fetch("http://127.0.0.1:8002/users/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: password,
+            role: "client"
+          })
+        });
+        if (!userRes.ok) {
+          const err = await userRes.json();
+          throw new Error(err.detail || "Failed to create user");
+        }
+        const userData = await userRes.json();
+        userId = userData.id;
+      }
 
-    toast({
-      title: "Success",
-      description: `Client ${client ? 'updated' : 'created'} successfully`
-    });
+      // 2. Create or update client
+      const clientPayload = {
+        name: formData.name,
+        contact_person: formData.contactPerson,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        type: formData.type,
+        // id and created_at are only needed for PUT (update), not POST (create)
+        ...(client && { id: client.id }),
+        created_at: client?.createdAt || new Date().toISOString(),
+      };
+
+      const clientRes = await fetch("http://127.0.0.1:8002/clients/", {
+        method: client ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clientPayload)
+      });
+      if (!clientRes.ok) {
+        const err = await clientRes.json();
+        throw new Error(err.detail || "Failed to save client");
+      }
+      const clientData = await clientRes.json();
+
+      toast({
+        title: "Success",
+        description: `Client ${client ? 'updated' : 'created'} successfully`
+      });
+      // Optionally, call onSave(clientData) or onCancel() here if you want to close the form or update parent state
+      if (onSave) onSave(clientData);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to save client",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

@@ -14,6 +14,7 @@ export interface User {
 }
 
 export interface Client {
+  userId: any;
   id: string;
   name: string;
   contactPerson: string;
