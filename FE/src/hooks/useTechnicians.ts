@@ -22,9 +22,9 @@ export const useTechnicians = () => {
           id: tech.id,
           name: tech.name,
           email: tech.email,
-          status: tech.status,
-          specialization: tech.specialization || [],
-          activeRequests: tech.active_requests || 0,
+          status: 'available', // Default status since User model doesn't have this
+          specialization: [], // Default empty array since User model doesn't have this
+          activeRequests: 0, // Default 0 since User model doesn't have this
           avatar: tech.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${tech.name}`
         })) as Technician[] || [];
       } catch (error) {

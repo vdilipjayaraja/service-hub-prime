@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../lib/api';
-import { Client } from '../types';
+import { User } from '../types';
 
 export const useClients = () => {
   const queryClient = useQueryClient();
@@ -14,15 +14,10 @@ export const useClients = () => {
         return data.map((client: any) => ({
           id: client.id,
           name: client.name,
-          contactPerson: client.contact_person,
           email: client.email,
-          phone: client.phone,
-          address: client.address,
-          type: client.type,
-          createdAt: client.created_at,
-          deviceCount: client.device_count || 0,
-          activeRequests: client.active_requests || 0
-        })) as Client[];
+          role: client.role,
+          avatar: client.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${client.name}`
+        })) as User[];
       } catch (error) {
         console.error('Error fetching clients:', error);
         return [];
@@ -31,14 +26,12 @@ export const useClients = () => {
   });
 
   const createClientMutation = useMutation({
-    mutationFn: async (newClient: Omit<Client, 'id' | 'createdAt'>) => {
+    mutationFn: async (newClient: Omit<User, 'id'>) => {
       const clientData = {
         name: newClient.name,
-        contact_person: newClient.contactPerson,
         email: newClient.email,
-        phone: newClient.phone,
-        address: newClient.address,
-        type: newClient.type
+        role: 'client',
+        avatar: newClient.avatar
       };
       
       return await apiService.createClient(clientData);

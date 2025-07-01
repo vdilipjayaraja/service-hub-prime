@@ -1,37 +1,36 @@
+
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from app.models import Client
-from app.schemas import ClientCreate, ClientUpdate
+from app.models import User
+from app.schemas import UserCreate, UserUpdate
 from typing import List, Optional
 
 class ClientService:
     @staticmethod
-    async def get_all(db: Session) -> List[Client]:
-        return db.query(Client).all()
+    async def get_all(db: Session) -> List[User]:
+        return db.query(User).filter(User.role == 'client').all()
     
     @staticmethod
-    async def get_by_id(db: Session, client_id: int) -> Optional[Client]:
-        return db.query(Client).filter(Client.id == client_id).first()
+    async def get_by_id(db: Session, client_id: int) -> Optional[User]:
+        return db.query(User).filter(User.id == client_id, User.role == 'client').first()
     
     @staticmethod
-    async def get_by_email(db: Session, email: str) -> Optional[Client]:
-        return db.query(Client).filter(Client.email == email).first()
+    async def get_by_email(db: Session, email: str) -> Optional[User]:
+        return db.query(User).filter(User.email == email, User.role == 'client').first()
     
     @staticmethod
-    async def get_by_type(db: Session, client_type: str) -> List[Client]:
-        return db.query(Client).filter(Client.type == client_type).all()
-    
-    @staticmethod
-    async def create(db: Session, client_data: ClientCreate) -> Client:
-        db_client = Client(**client_data.dict())
+    async def create(db: Session, client_data: UserCreate) -> User:
+        # Ensure role is set to client
+        client_data.role = 'client'
+        db_client = User(**client_data.dict())
         db.add(db_client)
         db.commit()
         db.refresh(db_client)
         return db_client
     
     @staticmethod
-    async def update(db: Session, client_id: int, client_data: ClientUpdate) -> Optional[Client]:
-        db_client = db.query(Client).filter(Client.id == client_id).first()
+    async def update(db: Session, client_id: int, client_data: UserUpdate) -> Optional[User]:
+        db_client = db.query(User).filter(User.id == client_id, User.role == 'client').first()
         if not db_client:
             return None
         
@@ -45,10 +44,10 @@ class ClientService:
     
     @staticmethod
     async def delete(db: Session, client_id: int) -> bool:
-        db_client = db.query(Client).filter(Client.id == client_id).first()
+        db_client = db.query(User).filter(User.id == client_id, User.role == 'client').first()
         if not db_client:
             return False
         
         db.delete(db_client)
         db.commit()
-        return True 
+        return True

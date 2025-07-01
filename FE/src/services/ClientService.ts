@@ -1,35 +1,33 @@
 
-import { Client } from '../types';
-import { mockClients } from '../data/mockData';
+import { User } from '../types';
+import { mockUsers } from '../data/mockData';
 
 export class ClientService {
-  private static clients: Client[] = [...mockClients];
+  private static clients: User[] = mockUsers.filter(user => user.role === 'client');
 
-  static async getAll(): Promise<Client[]> {
+  static async getAll(): Promise<User[]> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 100));
     return [...this.clients];
   }
 
-  static async getById(id: string): Promise<Client | null> {
+  static async getById(id: string): Promise<User | null> {
     await new Promise(resolve => setTimeout(resolve, 50));
     return this.clients.find(client => client.id === id) || null;
   }
 
-  static async create(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
+  static async create(clientData: Omit<User, 'id'>): Promise<User> {
     await new Promise(resolve => setTimeout(resolve, 200));
-    const newClient: Client = {
+    const newClient: User = {
       ...clientData,
       id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      deviceCount: 0,
-      activeRequests: 0
+      role: 'client'
     };
     this.clients.push(newClient);
     return newClient;
   }
 
-  static async update(id: string, updates: Partial<Client>): Promise<Client | null> {
+  static async update(id: string, updates: Partial<User>): Promise<User | null> {
     await new Promise(resolve => setTimeout(resolve, 200));
     const index = this.clients.findIndex(client => client.id === id);
     if (index === -1) return null;

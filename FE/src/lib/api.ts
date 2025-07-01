@@ -1,4 +1,3 @@
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 class ApiService {
@@ -104,13 +103,13 @@ class ApiService {
 
   // Technician endpoints
   async getTechnicians() {
-    return this.request('/technicians');
+    return this.request('/users/role/technician');
   }
 
   async createTechnician(technician: any) {
-    return this.request('/technicians', {
+    return this.request('/users', {
       method: 'POST',
-      body: JSON.stringify(technician),
+      body: JSON.stringify({ ...technician, role: 'technician' }),
     });
   }
 
