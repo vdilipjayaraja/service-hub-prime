@@ -1,0 +1,29 @@
+
+{
+  "users": [
+    {
+      "id": "admin-demo-uuid-001",
+      "name": "Admin User",
+      "email": "admin@techsolutions.com",
+      "password": "password",
+      "role": "admin",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Admin User"
+    },
+    {
+      "id": "tech-demo-uuid-002",
+      "name": "John Smith",
+      "email": "john@techsolutions.com",
+      "password": "password",
+      "role": "technician",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=John Smith"
+    },
+    {
+      "id": "client-demo-uuid-003",
+      "name": "Client User",
+      "email": "client@example.com",
+      "password": "password",
+      "role": "client",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Client User"
+    }
+  ]
+}
